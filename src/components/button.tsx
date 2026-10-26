@@ -56,7 +56,7 @@ export function Button({
           <Text variant="button" className="flex-shrink">
             {title}
           </Text>
-          {trailing ? <View>{trailing}</View> : null}
+          {trailing ? <View className="absolute right-6">{trailing}</View> : null}
         </>
       )}
     </Pressable>

@@ -2,10 +2,12 @@ import { Pressable, PressableProps } from "react-native";
 import { cn } from "./cn";
 
 const sizes = { md: "size-14", sm: "size-11" } as const;
+const variants = { soft: "bg-surface-alt", outline: "border border-border bg-surface" } as const;
 
 export function IconButton({
   label,
   size = "md",
+  variant = "soft",
   selected,
   disabled,
   className,
@@ -15,6 +17,7 @@ export function IconButton({
   /** Required: icon-only controls have no text to read. */
   label: string;
   size?: keyof typeof sizes;
+  variant?: keyof typeof variants;
   selected?: boolean;
   children: React.ReactNode;
 }) {
@@ -25,7 +28,8 @@ export function IconButton({
       accessibilityState={{ disabled: !!disabled, selected: !!selected }}
       disabled={disabled}
       className={cn(
-        "items-center justify-center rounded-full bg-surface-alt active:opacity-70",
+        "items-center justify-center rounded-full active:opacity-70",
+        variants[variant],
         selected && "bg-primary",
         disabled && "opacity-40",
         sizes[size],

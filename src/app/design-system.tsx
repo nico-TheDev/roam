@@ -1,11 +1,12 @@
 import {
   ArrowRight,
+  ChevronLeft,
+  Mail,
   Bookmark,
   Building2,
   Calendar,
   Check,
   CreditCard,
-  Eye,
   Heart,
   Home,
   List,
@@ -36,6 +37,8 @@ import {
   Badge,
   Button,
   Chip,
+  CodeInput,
+  Divider,
   Icon,
   IconButton,
   ListingCard,
@@ -44,6 +47,7 @@ import {
   ProfileRow,
   SegmentedControl,
   Section,
+  SocialButtons,
   Stepper,
   TabBar,
   Text,
@@ -88,6 +92,7 @@ export default function DesignSystem() {
   const [guests, setGuests] = useState(1);
   const [tab, setTab] = useState("home");
   const [favorite, setFavorite] = useState(false);
+  const [code, setCode] = useState("12");
   // ?only=04,07 renders just those sections (handy for screenshots).
   const { only } = useLocalSearchParams<{ only?: string }>();
   const shown = only?.split(",");
@@ -99,6 +104,8 @@ export default function DesignSystem() {
       {show("01") && (
       <Section number="01" title="Brand">
         <Wordmark />
+        <Wordmark size="sm" tagline={false} />
+        <Wordmark size="xs" tagline={false} />
       </Section>
       )}
 
@@ -139,6 +146,7 @@ export default function DesignSystem() {
       <Section number="04" title="Buttons">
         <Button title="Book this stay" trailing={<Icon icon={ArrowRight} />} />
         <Button title="Continue with Google" variant="secondary" />
+        <SocialButtons onPress={() => {}} />
         <Button title="Loading" loading />
         <Button title="Disabled" disabled />
         <View className="flex-row gap-3">
@@ -154,6 +162,9 @@ export default function DesignSystem() {
               <Icon icon={icon} size="lg" />
             </IconButton>
           ))}
+          <IconButton label="Back" variant="outline">
+            <Icon icon={ChevronLeft} size="lg" />
+          </IconButton>
         </View>
       </Section>
       )}
@@ -173,9 +184,23 @@ export default function DesignSystem() {
           secureTextEntry
           defaultValue="password"
           leading={<Icon icon={Lock} />}
-          trailing={<Icon icon={Eye} />}
         />
         <TextField label="Email" placeholder="Email" error="Enter a valid email" />
+        <TextField
+          label="Email address"
+          title="Email address"
+          placeholder="you@example.com"
+          leading={<Icon icon={Mail} size="lg" />}
+        />
+        <TextField
+          label="Password"
+          title="Password"
+          placeholder="At least 8 characters"
+          secureTextEntry
+          leading={<Icon icon={Lock} size="lg" />}
+        />
+        <CodeInput value={code} onChange={setCode} />
+        <Divider label="or" />
       </Section>
       )}
 

@@ -15,6 +15,7 @@ export default function RootLayout() {
     "PlusJakartaSans-Medium": require("../../assets/fonts/PlusJakartaSans-Medium.ttf"),
     "PlusJakartaSans-SemiBold": require("../../assets/fonts/PlusJakartaSans-SemiBold.ttf"),
     "PlusJakartaSans-Bold": require("../../assets/fonts/PlusJakartaSans-Bold.ttf"),
+    "Outfit-ExtraBold": require("../../assets/fonts/Outfit-ExtraBold.ttf"),
   });
 
   useEffect(() => {
@@ -22,5 +23,9 @@ export default function RootLayout() {
   }, [loaded, error]);
 
   if (!loaded && !error) return null;
-  return <Stack />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="design-system" options={{ headerShown: true }} />
+    </Stack>
+  );
 }
