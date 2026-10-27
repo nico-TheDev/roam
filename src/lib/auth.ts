@@ -1,40 +1,156 @@
-// Mocked authentication. The only file that changes when Clerk replaces it.
-// Test values: verification code 123456 succeeds; sign in fails for wrong@example.com.
+// Clerk-backed auth for the custom screens. Hooks return AuthResult so screens only render state.
+// Screens never navigate after success: the Stack.Protected guards in _layout.tsx react to the session.
+import { useClerk, useSignIn, useSignUp, useSSO } from "@clerk/expo";
+import { useCallback } from "react";
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
 export type Provider = "google" | "apple";
+export type VerifyFlow = "sign-up" | "sign-in";
 
 export const CODE_LENGTH = 6;
-const MOCK_CODE = "123456";
-const FAILING_EMAIL = "wrong@example.com";
-const DELAY_MS = 900;
 
-const wait = () => new Promise<void>((resolve) => setTimeout(resolve, DELAY_MS));
 const ok: AuthResult = { ok: true };
+const GENERIC_ERROR = "Something went wrong. Try again in a moment.";
+const TASK_ERROR = "We couldn't finish setting up your account. Contact support and we'll sort it out.";
 
-export async function signUp(_input: { name: string; email: string; password: string }): Promise<AuthResult> {
-  await wait();
-  return ok;
+const fail = (error: string) => ({ ok: false, error }) as const;
+
+// Clerk's long messages are written for end users ("Password has been found in an online data breach...").
+function describe(error: { errors?: { longMessage?: string; message?: string }[]; message?: string } | null | undefined) {
+  const first = error?.errors?.[0];
+  return first?.longMessage ?? first?.message ?? error?.message ?? GENERIC_ERROR;
 }
 
-export async function verifyCode(_email: string, code: string): Promise<AuthResult> {
-  await wait();
-  return code === MOCK_CODE ? ok : { ok: false, error: "That code is not right. Check it and try again." };
+// A session task (for example forced MFA setup) has no screen yet; none are enabled on the instance.
+const finishNavigate = ({ session }: { session?: { currentTask?: unknown } | null }) => {
+  if (session?.currentTask) throw new Error("session-task");
+};
+
+/** "Adrian Hajdin" → first "Adrian", last "Hajdin". One word is first name only. */
+export function splitName(fullName: string) {
+  const [firstName, ...rest] = fullName.trim().split(/\s+/);
+  const lastName = rest.join(" ");
+  return lastName ? { firstName, lastName } : { firstName };
 }
 
-export async function resendCode(_email: string): Promise<AuthResult> {
-  await wait();
-  return ok;
+export function useSignUpFlow() {
+  const { signUp } = useSignUp();
+
+  const start = useCallback(
+    async (input: { name: string; email: string; password: string }): Promise<AuthResult> => {
+      const created = await signUp.password({
+        emailAddress: input.email,
+        password: input.password,
+        ...splitName(input.name),
+      });
+      if (created.error) return fail(describe(created.error));
+      const sent = await signUp.verifications.sendEmailCode();
+      return sent.error ? fail(describe(sent.error)) : ok;
+    },
+    [signUp],
+  );
+
+  const resend = useCallback(async (): Promise<AuthResult> => {
+    const sent = await signUp.verifications.sendEmailCode();
+    return sent.error ? fail(describe(sent.error)) : ok;
+  }, [signUp]);
+
+  const verify = useCallback(
+    async (code: string): Promise<AuthResult> => {
+      const verified = await signUp.verifications.verifyEmailCode({ code });
+      if (verified.error) return fail(describe(verified.error));
+      if (signUp.status !== "complete") return fail(GENERIC_ERROR);
+      try {
+        const done = await signUp.finalize({ navigate: finishNavigate });
+        return done.error ? fail(describe(done.error)) : ok;
+      } catch {
+        return fail(TASK_ERROR);
+      }
+    },
+    [signUp],
+  );
+
+  return { start, resend, verify };
 }
 
-export async function signIn(input: { email: string; password: string }): Promise<AuthResult> {
-  await wait();
-  return input.email.trim().toLowerCase() === FAILING_EMAIL
-    ? { ok: false, error: "We couldn't sign you in with that email and password." }
-    : ok;
+export type SignInOutcome = { ok: true; next: "home" | "verify" } | { ok: false; error: string };
+
+export function useSignInFlow() {
+  const { signIn } = useSignIn();
+
+  const start = useCallback(
+    async (input: { email: string; password: string }): Promise<SignInOutcome> => {
+      const attempt = await signIn.password({ emailAddress: input.email, password: input.password });
+      if (attempt.error) return fail(describe(attempt.error));
+
+      if (signIn.status === "complete") {
+        try {
+          const done = await signIn.finalize({ navigate: finishNavigate });
+          return done.error ? fail(describe(done.error)) : { ok: true, next: "home" };
+        } catch {
+          return fail(TASK_ERROR);
+        }
+      }
+      // Device trust: a new device must confirm with an emailed code.
+      if (signIn.status === "needs_client_trust") {
+        const sent = await signIn.mfa.sendEmailCode();
+        return sent.error ? fail(describe(sent.error)) : { ok: true, next: "verify" };
+      }
+      return fail(GENERIC_ERROR);
+    },
+    [signIn],
+  );
+
+  const resend = useCallback(async (): Promise<AuthResult> => {
+    const sent = await signIn.mfa.sendEmailCode();
+    return sent.error ? fail(describe(sent.error)) : ok;
+  }, [signIn]);
+
+  const verify = useCallback(
+    async (code: string): Promise<AuthResult> => {
+      const verified = await signIn.mfa.verifyEmailCode({ code });
+      if (verified.error) return fail(describe(verified.error));
+      if (signIn.status !== "complete") return fail(GENERIC_ERROR);
+      try {
+        const done = await signIn.finalize({ navigate: finishNavigate });
+        return done.error ? fail(describe(done.error)) : ok;
+      } catch {
+        return fail(TASK_ERROR);
+      }
+    },
+    [signIn],
+  );
+
+  return { start, resend, verify };
 }
 
-export async function signInWithProvider(_provider: Provider): Promise<AuthResult> {
-  await wait();
-  return ok;
+/** Browser SSO. Cancelling the browser is not an error: it resolves ok without a session. */
+export function useProviderAuth() {
+  const { startSSOFlow } = useSSO();
+
+  return useCallback(
+    async (provider: Provider): Promise<AuthResult> => {
+      if (provider !== "google") return fail("That sign in isn't available yet.");
+      try {
+        const { createdSessionId, setActive } = await startSSOFlow({ strategy: "oauth_google" });
+        if (createdSessionId && setActive) await setActive({ session: createdSessionId });
+        return ok;
+      } catch (e) {
+        return fail(describe(e as Parameters<typeof describe>[0]));
+      }
+    },
+    [startSSOFlow],
+  );
+}
+
+export function useSignOut() {
+  const { signOut } = useClerk();
+  return useCallback(async (): Promise<AuthResult> => {
+    try {
+      await signOut();
+      return ok;
+    } catch {
+      return fail(GENERIC_ERROR);
+    }
+  }, [signOut]);
 }

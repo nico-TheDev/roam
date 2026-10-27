@@ -20,7 +20,10 @@ export function SocialButtons({
   onPress,
   loading,
   disabled,
+  providers = ["google", "apple"],
 }: {
+  /** Buttons to show, in order. */
+  providers?: SocialProvider[];
   onPress: (provider: SocialProvider) => void;
   /** Provider whose request is in flight. */
   loading?: SocialProvider | null;
@@ -28,22 +31,26 @@ export function SocialButtons({
 }) {
   return (
     <View className="gap-3">
-      <Button
-        title="Continue with Google"
-        variant="secondary"
-        icon={<GoogleMark />}
-        loading={loading === "google"}
-        disabled={disabled && loading !== "google"}
-        onPress={() => onPress("google")}
-      />
-      <Button
-        title="Continue with Apple"
-        variant="secondary"
-        icon={<Icon icon={Apple} size="lg" filled />}
-        loading={loading === "apple"}
-        disabled={disabled && loading !== "apple"}
-        onPress={() => onPress("apple")}
-      />
+      {providers.includes("google") && (
+        <Button
+          title="Continue with Google"
+          variant="secondary"
+          icon={<GoogleMark />}
+          loading={loading === "google"}
+          disabled={disabled && loading !== "google"}
+          onPress={() => onPress("google")}
+        />
+      )}
+      {providers.includes("apple") && (
+        <Button
+          title="Continue with Apple"
+          variant="secondary"
+          icon={<Icon icon={Apple} size="lg" filled />}
+          loading={loading === "apple"}
+          disabled={disabled && loading !== "apple"}
+          onPress={() => onPress("apple")}
+        />
+      )}
     </View>
   );
 }

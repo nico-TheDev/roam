@@ -3,14 +3,16 @@ import { ArrowRight, CircleCheck, TriangleAlert } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Alert, AuthScreen, Button, CodeInput, Icon, Text } from "@/components";
-import { CODE_LENGTH, resendCode, verifyCode } from "@/lib/auth";
-import { useEnterApp } from "@/lib/use-enter-app";
+import { CODE_LENGTH, useSignInFlow, useSignUpFlow, VerifyFlow } from "@/lib/auth";
 
 const RESEND_SECONDS = 30;
 
 export default function Verify() {
-  const { email = "" } = useLocalSearchParams<{ email?: string }>();
-  const enterApp = useEnterApp();
+  const { email = "", flow = "sign-up" } = useLocalSearchParams<{ email?: string; flow?: VerifyFlow }>();
+  // Both hooks are cheap; only the one for this flow is called.
+  const signUp = useSignUpFlow();
+  const signIn = useSignInFlow();
+  const { verify, resend: resendCode } = flow === "sign-in" ? signIn : signUp;
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -29,17 +31,16 @@ export default function Verify() {
     setError(null);
     setNotice(null);
     setLoading(true);
-    const result = await verifyCode(email, code);
+    const result = await verify(code);
     setLoading(false);
-    if (result.ok) enterApp();
-    else setError(result.error);
+    if (!result.ok) setError(result.error);
   };
 
   const resend = async () => {
     setError(null);
     setNotice(null);
     setResending(true);
-    const result = await resendCode(email);
+    const result = await resendCode();
     setResending(false);
     if (result.ok) {
       setCode("");
@@ -50,8 +51,12 @@ export default function Verify() {
 
   return (
     <AuthScreen
-      title="Verify your email"
-      subtitle={`We sent a 6-digit code to ${email || "your email"}. Enter it below to finish creating your account.`}
+      title={flow === "sign-in" ? "Confirm it's you" : "Verify your email"}
+      subtitle={
+        flow === "sign-in"
+          ? `We sent a 6-digit code to ${email || "your email"} because you're signing in from a new device.`
+          : `We sent a 6-digit code to ${email || "your email"}. Enter it below to finish creating your account.`
+      }
     >
       <CodeInput value={code} onChange={setCode} length={CODE_LENGTH} error={!!error} autoFocus />
       {error ? (

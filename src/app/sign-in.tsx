@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { ArrowRight, Lock, Mail, TriangleAlert } from "lucide-react-native";
 import { useRef, useState } from "react";
 import { View } from "react-native";
@@ -13,14 +14,15 @@ import {
   TextField,
   TextFieldRef,
 } from "@/components";
-import { signIn, signInWithProvider } from "@/lib/auth";
-import { useEnterApp } from "@/lib/use-enter-app";
+import { useProviderAuth, useSignInFlow } from "@/lib/auth";
 import { validateEmail, validatePassword } from "@/lib/validation";
 
 type Field = "email" | "password";
 
 export default function SignIn() {
-  const enterApp = useEnterApp();
+  const router = useRouter();
+  const signIn = useSignInFlow();
+  const authWithProvider = useProviderAuth();
   const passwordRef = useRef<TextFieldRef>(null);
   const [values, setValues] = useState({ email: "", password: "" });
   const [touched, setTouched] = useState<Record<Field, boolean>>({ email: false, password: false });
@@ -43,19 +45,19 @@ export default function SignIn() {
     setFormError(null);
     if (errors.email || errors.password) return;
     setLoading(true);
-    const result = await signIn({ email: values.email.trim(), password: values.password });
+    const email = values.email.trim();
+    const result = await signIn.start({ email, password: values.password });
     setLoading(false);
-    if (result.ok) enterApp();
-    else setFormError(result.error);
+    if (!result.ok) setFormError(result.error);
+    else if (result.next === "verify") router.push({ pathname: "/verify", params: { email, flow: "sign-in" } });
   };
 
   const continueWith = async (provider: SocialProvider) => {
     setFormError(null);
     setSocial(provider);
-    const result = await signInWithProvider(provider);
+    const result = await authWithProvider(provider);
     setSocial(null);
-    if (result.ok) enterApp();
-    else setFormError(result.error);
+    if (!result.ok) setFormError(result.error);
   };
 
   return (
@@ -107,7 +109,7 @@ export default function SignIn() {
           onPress={submit}
         />
         <Divider label="or" />
-        <SocialButtons onPress={continueWith} loading={social} disabled={busy} />
+        <SocialButtons providers={["google"]} onPress={continueWith} loading={social} disabled={busy} />
       </View>
       <AuthSwitch prompt="New to roam?" action="Create an account" href="/sign-up" />
     </AuthScreen>

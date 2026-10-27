@@ -14,15 +14,15 @@ import {
   TextField,
   TextFieldRef,
 } from "@/components";
-import { signInWithProvider, signUp } from "@/lib/auth";
-import { useEnterApp } from "@/lib/use-enter-app";
+import { useProviderAuth, useSignUpFlow } from "@/lib/auth";
 import { validateEmail, validateName, validatePassword } from "@/lib/validation";
 
 type Field = "name" | "email" | "password";
 
 export default function SignUp() {
   const router = useRouter();
-  const enterApp = useEnterApp();
+  const signUp = useSignUpFlow();
+  const authWithProvider = useProviderAuth();
   const emailRef = useRef<TextFieldRef>(null);
   const passwordRef = useRef<TextFieldRef>(null);
   const [values, setValues] = useState({ name: "", email: "", password: "" });
@@ -50,19 +50,18 @@ export default function SignUp() {
     setFormError(null);
     if (errors.name || errors.email || errors.password) return;
     setLoading(true);
-    const result = await signUp({ name: values.name.trim(), email: values.email.trim(), password: values.password });
+    const result = await signUp.start({ name: values.name.trim(), email: values.email.trim(), password: values.password });
     setLoading(false);
-    if (result.ok) router.push({ pathname: "/verify", params: { email: values.email.trim() } });
+    if (result.ok) router.push({ pathname: "/verify", params: { email: values.email.trim(), flow: "sign-up" } });
     else setFormError(result.error);
   };
 
   const continueWith = async (provider: SocialProvider) => {
     setFormError(null);
     setSocial(provider);
-    const result = await signInWithProvider(provider);
+    const result = await authWithProvider(provider);
     setSocial(null);
-    if (result.ok) enterApp();
-    else setFormError(result.error);
+    if (!result.ok) setFormError(result.error);
   };
 
   return (
@@ -133,8 +132,9 @@ export default function SignUp() {
           onPress={submit}
         />
         <Divider label="or" />
-        <SocialButtons onPress={continueWith} loading={social} disabled={busy} />
+        <SocialButtons providers={["google"]} onPress={continueWith} loading={social} disabled={busy} />
       </View>
+      <View nativeID="clerk-captcha" />
       <AuthSwitch prompt="Already have an account?" action="Sign in" href="/sign-in" />
     </AuthScreen>
   );

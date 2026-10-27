@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { ArrowRight, MapPin } from "lucide-react-native";
+import { ArrowRight, MapPin, TriangleAlert } from "lucide-react-native";
 import { useRef, useState } from "react";
 import {
   FlatList,
@@ -13,7 +13,8 @@ import {
 } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, GoogleMark, Icon, OnboardingDashes, SheetShape, Text, Wordmark } from "@/components";
+import { Alert, Button, GoogleMark, Icon, OnboardingDashes, SheetShape, Text, Wordmark } from "@/components";
+import { useProviderAuth } from "@/lib/auth";
 
 // Sample Unsplash photos, not final assets.
 const slides = [
@@ -42,8 +43,19 @@ export default function Onboarding() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const listRef = useRef<FlatList>(null);
+  const authWithProvider = useProviderAuth();
   const [index, setIndex] = useState(0);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
   const slide = slides[index];
+
+  const continueWithGoogle = async () => {
+    setGoogleError(null);
+    setGoogleLoading(true);
+    const result = await authWithProvider("google");
+    setGoogleLoading(false);
+    if (!result.ok) setGoogleError(result.error);
+  };
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const next = Math.round(e.nativeEvent.contentOffset.x / width);
@@ -84,7 +96,7 @@ export default function Onboarding() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Skip"
-          onPress={() => router.replace("/home")}
+          onPress={() => router.push("/sign-in")}
           className="mt-2 h-12 items-center justify-center rounded-full bg-glass px-5 active:opacity-70"
         >
           <Text variant="caption">Skip</Text>
@@ -122,9 +134,18 @@ export default function Onboarding() {
               {slide.body}
             </Text>
           </Animated.View>
+          {googleError ? (
+            <Alert tone="danger" message={googleError} icon={<Icon icon={TriangleAlert} className="text-danger" />} />
+          ) : null}
           <View className="gap-3">
             <Button title="Get started" trailing={<Icon icon={ArrowRight} />} onPress={() => router.push("/sign-up")} />
-            <Button title="Continue with Google" variant="secondary" icon={<GoogleMark />} onPress={() => router.push("/sign-up")} />
+            <Button
+              title="Continue with Google"
+              variant="secondary"
+              icon={<GoogleMark />}
+              loading={googleLoading}
+              onPress={continueWithGoogle}
+            />
           </View>
         </SheetShape>
       </View>
