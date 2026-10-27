@@ -1,4 +1,4 @@
-import { verifyToken } from "@clerk/backend";
+import { getUserId } from "@/lib/api-auth";
 import { buildSearchQuery } from "@/lib/search-query";
 import { queryContext, readSentence } from "@/lib/search-server";
 
@@ -6,20 +6,8 @@ const MAX_QUERY_LENGTH = 200;
 
 const json = (body: unknown, status = 200) => Response.json(body, { status });
 
-async function isSignedIn(request: Request) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  const secretKey = process.env.CLERK_SECRET_KEY;
-  if (!token || !secretKey) return false;
-  try {
-    await verifyToken(token, { secretKey });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export async function POST(request: Request) {
-  if (!(await isSignedIn(request))) return json({ error: "Unauthorized" }, 401);
+  if (!(await getUserId(request))) return json({ error: "Unauthorized" }, 401);
 
   const body = (await request.json().catch(() => null)) as { query?: unknown } | null;
   const query = typeof body?.query === "string" ? body.query.trim() : "";

@@ -8,12 +8,14 @@ export function BookingBar({
   price,
   totalLabel,
   onBook,
+  disabled,
   className,
   style,
 }: {
   price: number;
   totalLabel: string;
   onBook: () => void;
+  disabled?: boolean;
   className?: string;
   style?: ViewProps["style"];
 }) {
@@ -26,7 +28,7 @@ export function BookingBar({
         </Text>
         <Text variant="body">{totalLabel}</Text>
       </View>
-      <Button title="Book this stay" onPress={onBook} className="flex-1" />
+      <Button title="Book this stay" disabled={disabled} onPress={onBook} className="flex-1" />
     </View>
   );
 }

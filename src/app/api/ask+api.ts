@@ -1,24 +1,12 @@
-import { verifyToken } from "@clerk/backend";
+import { getUserId } from "@/lib/api-auth";
 import { loadPolicies, pickPolicies } from "@/lib/ask-server";
 
 const MAX_QUESTION_LENGTH = 300;
 
 const json = (body: unknown, status = 200) => Response.json(body, { status });
 
-async function isSignedIn(request: Request) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  const secretKey = process.env.CLERK_SECRET_KEY;
-  if (!token || !secretKey) return false;
-  try {
-    await verifyToken(token, { secretKey });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export async function POST(request: Request) {
-  if (!(await isSignedIn(request))) return json({ error: "Unauthorized" }, 401);
+  if (!(await getUserId(request))) return json({ error: "Unauthorized" }, 401);
 
   const body = (await request.json().catch(() => null)) as { question?: unknown } | null;
   const question = typeof body?.question === "string" ? body.question.trim() : "";

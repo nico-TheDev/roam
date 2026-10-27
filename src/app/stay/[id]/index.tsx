@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, FileText, Heart, MapPin, MessageCircleMore, Share as ShareIcon } from "lucide-react-native";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ScrollView, Share, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,6 +19,7 @@ import {
 } from "@/components";
 import { useEntering } from "@/lib/motion";
 import { posthog } from "@/lib/posthog";
+import { useSavedStays } from "@/lib/saved";
 import { highlights, priceSummary, useStayDetails } from "@/lib/stay-details";
 import type { StayDetails } from "@/lib/stay-details";
 
@@ -66,8 +67,8 @@ export default function StayScreen() {
 function StayContent({ stay, source, onBack }: { stay: StayDetails; source?: string; onBack: () => void }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [favorite, setFavorite] = useState(false);
-  const [soon, setSoon] = useState(false);
+  const saved = useSavedStays();
+  const favorite = saved.isSaved(stay.id);
   const opened = useRef<string | null>(null);
 
   // Once per visit, and never with anything the guest typed.
@@ -83,12 +84,6 @@ function StayContent({ stay, source, onBack }: { stay: StayDetails; source?: str
     });
   }, [stay, source]);
 
-  useEffect(() => {
-    if (!soon) return;
-    const timer = setTimeout(() => setSoon(false), 3000);
-    return () => clearTimeout(timer);
-  }, [soon]);
-
   const entering = [useEntering(0), useEntering(1), useEntering(2), useEntering(3)];
   const { total, nights } = priceSummary(stay);
   const items = highlights(stay);
@@ -101,7 +96,7 @@ function StayContent({ stay, source, onBack }: { stay: StayDetails; source?: str
 
   const book = () => {
     posthog?.capture("stay_book_tapped", { stay_id: stay.id });
-    setSoon(true);
+    router.push({ pathname: "/stay/[id]/book", params: { id: stay.id } });
   };
 
   return (
@@ -120,7 +115,7 @@ function StayContent({ stay, source, onBack }: { stay: StayDetails; source?: str
               label={favorite ? "Remove from favorites" : "Save to favorites"}
               variant="outline"
               className="border-0"
-              onPress={() => setFavorite((f) => !f)}
+              onPress={() => saved.toggle(stay.id)}
             >
               <Icon icon={Heart} size="lg" filled={favorite} />
             </IconButton>
@@ -182,15 +177,21 @@ function StayContent({ stay, source, onBack }: { stay: StayDetails; source?: str
         </View>
       </ScrollView>
 
-      {soon ? (
+      {!stay.listed ? (
         <View className="px-5 pb-3">
-          <Alert message="Booking is coming soon." />
+          <Alert tone="danger" message="Not available right now" />
+        </View>
+      ) : null}
+      {saved.error ? (
+        <View className="px-5 pb-3">
+          <Alert tone="danger" message={saved.error} onDismiss={saved.dismissError} />
         </View>
       ) : null}
       <BookingBar
         price={stay.nightlyPrice}
         totalLabel={`$${total} total · ${nights} ${nights === 1 ? "night" : "nights"}`}
         onBook={book}
+        disabled={!stay.listed}
         style={{ paddingBottom: Math.max(insets.bottom, 16) }}
       />
     </View>
