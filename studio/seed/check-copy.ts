@@ -42,7 +42,7 @@ export const AMENITY_LABELS: Record<string, string> = {
   'beach-access': 'beach access',
 }
 
-const STATE_NAMES: Record<string, string> = {
+export const STATE_NAMES: Record<string, string> = {
   CA: 'California', OR: 'Oregon', CO: 'Colorado', HI: 'Hawaii', FL: 'Florida', NY: 'New York', WA: 'Washington',
   TX: 'Texas', NC: 'North Carolina', MT: 'Montana', TN: 'Tennessee', IL: 'Illinois', LA: 'Louisiana',
 }
