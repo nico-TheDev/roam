@@ -18,5 +18,5 @@
     "expo-env.d.ts",
     "nativewind-env.d.ts"
   ],
-  "exclude": ["node_modules", "studio"]
+  "exclude": ["node_modules", "studio", "landing"]
 }
