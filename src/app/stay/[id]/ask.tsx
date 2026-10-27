@@ -1,31 +1,74 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
-import { ComponentProps, Ref, useRef, useState } from "react";
+import { useAuth } from "@clerk/expo";
+import { ComponentProps, Ref, useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnswerCard, ChatBubble, ChatInput, Chip, Icon, IconButton, Text } from "@/components";
-import { answerFor, answersFor, greeting, topics } from "@/lib/ask-samples";
-import type { Answer } from "@/lib/ask-samples";
+import { AskError, askPolicies, greeting, noMatch, topics } from "@/lib/ask-policies";
+import type { Answer } from "@/lib/ask-policies";
 import { useEntering } from "@/lib/motion";
+import { posthog } from "@/lib/posthog";
 import { getCachedStay } from "@/lib/stay-details";
 
 type ScrollViewInstance = ComponentProps<typeof ScrollView> extends { ref?: Ref<infer T> } ? T : never;
 
-type Turn = { id: number; guest: string; answers: Answer[] };
+type Turn = { id: number; guest: string; source: "chip" | "typed"; status: "pending" | "ready" | "error"; answers: Answer[] };
 
-// Sample chat: replies come from src/lib/ask-samples.ts, no backend yet.
+// Replies come from Roam's policies through /api/ask: DeepSeek picks the entries, the cards show them word for word.
 export default function AskAboutStay() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const stay = getCachedStay(id);
   const [turns, setTurns] = useState<Turn[]>([]);
+  const { getToken } = useAuth();
   const scroll = useRef<ScrollViewInstance>(null);
+  const nextId = useRef(0);
+  const requests = useRef(new AbortController());
 
-  const ask = (guest: string, answers: Answer[]) => {
-    setTurns((t) => [...t, { id: t.length, guest, answers }]);
-    requestAnimationFrame(() => scroll.current?.scrollToEnd({ animated: true }));
+  useEffect(() => {
+    const controller = requests.current;
+    return () => controller.abort();
+  }, []);
+
+  const scrollToEnd = () => requestAnimationFrame(() => scroll.current?.scrollToEnd({ animated: true }));
+  const update = (turnId: number, patch: Partial<Turn>) =>
+    setTurns((all) => all.map((t) => (t.id === turnId ? { ...t, ...patch } : t)));
+
+  const run = async (turn: Pick<Turn, "id" | "guest" | "source">) => {
+    try {
+      const answers = await askPolicies(turn.guest, await getToken(), requests.current.signal);
+      update(turn.id, { status: "ready", answers: answers.length ? answers : [noMatch] });
+      posthog?.capture("stay_policy_question_asked", {
+        source: turn.source,
+        outcome: answers.length ? "answered" : "no_match",
+        answer_count: answers.length,
+      });
+    } catch (e) {
+      if (requests.current.signal.aborted) return;
+      update(turn.id, { status: "error" });
+      posthog?.capture("stay_policy_question_asked", {
+        source: turn.source,
+        outcome: "failed",
+        answer_count: 0,
+        reason: e instanceof AskError ? e.reason : "network",
+      });
+    }
+    scrollToEnd();
+  };
+
+  const ask = (guest: string, source: Turn["source"]) => {
+    const turn = { id: nextId.current++, guest, source };
+    setTurns((t) => [...t, { ...turn, status: "pending", answers: [] }]);
+    scrollToEnd();
+    run(turn);
+  };
+
+  const retry = (turn: Turn) => {
+    update(turn.id, { status: "pending" });
+    run(turn);
   };
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace({ pathname: "/stay/[id]", params: { id } }));
@@ -59,7 +102,7 @@ export default function AskAboutStay() {
       >
         <Text variant="body">{greeting}</Text>
         {turns.map((turn) => (
-          <TurnView key={turn.id} turn={turn} />
+          <TurnView key={turn.id} turn={turn} onRetry={() => retry(turn)} />
         ))}
       </ScrollView>
 
@@ -71,16 +114,16 @@ export default function AskAboutStay() {
           keyboardShouldPersistTaps="handled"
         >
           {topics.map((t) => (
-            <Chip key={t.topic} label={t.label} onPress={() => ask(t.question, [answerFor(t.topic)])} />
+            <Chip key={t.label} label={t.label} onPress={() => ask(t.question, "chip")} />
           ))}
         </ScrollView>
-        <ChatInput className="mx-5" onSend={(text) => ask(text, answersFor(text))} />
+        <ChatInput className="mx-5" onSend={(text) => ask(text, "typed")} />
       </View>
     </KeyboardAvoidingView>
   );
 }
 
-function TurnView({ turn }: { turn: Turn }) {
+function TurnView({ turn, onRetry }: { turn: Turn; onRetry: () => void }) {
   const guest = useEntering(0);
   const reply = useEntering(1);
   return (
@@ -89,8 +132,15 @@ function TurnView({ turn }: { turn: Turn }) {
         <ChatBubble text={turn.guest} />
       </Animated.View>
       <Animated.View entering={reply} className="gap-3">
+        {turn.status === "pending" ? <Text variant="small">Checking the policies…</Text> : null}
+        {turn.status === "error" ? (
+          <View className="items-start gap-2">
+            <Text variant="body">Couldn&apos;t check the policies. Try again.</Text>
+            <Chip label="Try again" onPress={onRetry} />
+          </View>
+        ) : null}
         {turn.answers.map((a) => (
-          <AnswerCard key={a.topic} title={a.title} text={a.text} source={a.source} />
+          <AnswerCard key={a.path} title={a.title} text={a.text} source={a.source} />
         ))}
       </Animated.View>
     </View>
