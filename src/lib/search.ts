@@ -71,14 +71,14 @@ export const AMENITY_LABELS: Record<Amenity, string> = {
   "ev-charger": "EV Charger",
 };
 
-const CATEGORY_WORDS: Record<Category, RegExp> = {
+export const CATEGORY_WORDS: Record<Category, RegExp> = {
   cabin: /\b(?:cabins?|a-frames?|lodges?|chalets?)\b/gi,
   beach: /\b(?:beach(?:es|front)?|oceanfront|seaside|coastal)\b/gi,
   city: /\b(?:city|downtown|apartments?|lofts?|condos?|urban)\b/gi,
   villa: /\b(?:villas?|mansions?|estates?)\b/gi,
 };
 
-const AMENITY_WORDS: Record<Amenity, RegExp> = {
+export const AMENITY_WORDS: Record<Amenity, RegExp> = {
   "hot-tub": /\b(?:hot[- ]?tubs?|jacuzzi|spa)\b/gi,
   pool: /\b(?:pools?|swimming)\b/gi,
   fireplace: /\b(?:fireplaces?|wood[- ]?stove)\b/gi,
@@ -97,7 +97,7 @@ const AMENITY_WORDS: Record<Amenity, RegExp> = {
   "ev-charger": /\b(?:ev[- ]charger|ev[- ]charging)\b/gi,
 };
 
-const TAG_WORDS: Record<Tag, RegExp> = {
+export const TAG_WORDS: Record<Tag, RegExp> = {
   quiet: /\b(?:quiet|peaceful|calm|tranquil|serene)\b/gi,
   cozy: /\b(?:cozy|cosy|warm)\b/gi,
   secluded: /\b(?:secluded|remote|isolated|off[- ]grid|hideaway)\b/gi,
@@ -107,14 +107,14 @@ const TAG_WORDS: Record<Tag, RegExp> = {
   modern: /\b(?:modern|contemporary)\b/gi,
 };
 
-const PETS = /\b(?:pet[- ]?friendly|dog[- ]?friendly|pets?|dogs?|cats?)\b/gi;
+export const PETS = /\b(?:pet[- ]?friendly|dog[- ]?friendly|pets?|dogs?|cats?)\b/gi;
 const PRICE = /\b(?:under|below|less than|up to|max(?:imum)?|within)\s*\$?\s*(\d{2,5})\b|\$\s*(\d{2,5})\s*(?:or less|max)\b/i;
 const GUESTS = [
   /\b(\d{1,2})\s*(?:guests?|people|persons?|adults?)\b/i,
   /\b(?:for|sleeps?|fits?)\s+(\d{1,2})\b(?!\s*(?:nights?|\$))/i,
 ];
 
-const STATES: Record<string, string> = {
+export const STATES: Record<string, string> = {
   CA: "California",
   CO: "Colorado",
   FL: "Florida",
@@ -131,7 +131,7 @@ const STATES: Record<string, string> = {
 };
 
 // Every city a stay is in today. A place filter can only match a city or state listed here.
-const CITIES = [
+export const CITIES = [
   "Asheville", "Aspen", "Austin", "Bend", "Big Bear Lake", "Brooklyn", "Cannon Beach", "Chicago", "Destin",
   "Fredericksburg", "Gatlinburg", "Healdsburg", "Kailua-Kona", "Lake Arrowhead", "Los Angeles", "Malibu", "Miami",
   "Monte Rio", "Nags Head", "Napa", "New Orleans", "New York", "Paia", "Palm Springs", "San Diego", "Santa Barbara",
@@ -153,11 +153,12 @@ export function placeTarget(place: string): { city: string } | { state: string }
   return { state: state ?? place };
 }
 
-const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-const matches = (text: string, re: RegExp) => text.match(re) ?? [];
+export const matches = (text: string, re: RegExp) => text.match(re) ?? [];
 
-function placeFilter(text: string) {
+/** The known city or state a sentence mentions, with the exact words that named it. */
+export function placeFilter(text: string) {
   for (const name of PLACES) {
     const m = text.match(new RegExp(`(?:\\b(?:in|near|around)\\s+)?\\b${escape(name)}\\b`, "i"));
     if (m) return { name, span: m[0] };
@@ -236,7 +237,7 @@ export function parseQuery(text: string): ParsedQuery {
 }
 
 /** Text without the pieces a filter came from, so removing a chip updates the search box too. */
-export function removeFilter(text: string, filter: Filter) {
+export function removeFilter(text: string, filter: Pick<Filter, "spans">) {
   return filter.spans.reduce((s, span) => s.replace(span, " "), text).replace(/\s+/g, " ").trim();
 }
 

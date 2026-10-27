@@ -1,8 +1,7 @@
 import { verifyToken } from "@clerk/backend";
-import { parseQuery } from "@/lib/search";
-import { buildSearchQuery, type SearchStay } from "@/lib/search-query";
+import { buildSearchQuery } from "@/lib/search-query";
+import { queryContext, readSentence } from "@/lib/search-server";
 
-const API_VERSION = "2026-02-01";
 const MAX_QUERY_LENGTH = 200;
 
 const json = (body: unknown, status = 200) => Response.json(body, { status });
@@ -19,8 +18,6 @@ async function isSignedIn(request: Request) {
   }
 }
 
-type RawStay = Omit<SearchStay, "imageUrl"> & { imageUrl: string | null };
-
 export async function POST(request: Request) {
   if (!(await isSignedIn(request))) return json({ error: "Unauthorized" }, 401);
 
@@ -30,34 +27,18 @@ export async function POST(request: Request) {
     return json({ error: "Invalid search" }, 400);
   }
 
-  const projectId = process.env.EXPO_PUBLIC_SANITY_PROJECT_ID;
-  const dataset = process.env.EXPO_PUBLIC_SANITY_DATASET;
-  const sanityToken = process.env.SANITY_API_READ_TOKEN;
-  if (!projectId || !dataset || !sanityToken) return json({ error: "Search is not configured" }, 500);
+  const endpoint = process.env.SANITY_CONTEXT_MCP_URL;
+  const contextToken = process.env.SANITY_API_CONTEXT_TOKEN;
+  if (!endpoint || !contextToken) return json({ error: "Search is not configured" }, 500);
 
-  const parsed = parseQuery(query);
-  const { query: groq, params, semantic } = buildSearchQuery(parsed);
+  const intent = await readSentence(query);
+  const { query: groq, semantic } = buildSearchQuery(intent);
 
-  const res = await fetch(
-    `https://${projectId}.api.sanity.io/v${API_VERSION}/data/query/${dataset}?perspective=published`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${sanityToken}` },
-      body: JSON.stringify({ query: groq, params }),
-    },
-  );
-  if (!res.ok) return json({ error: "Search failed" }, 502);
-
-  const { result } = (await res.json()) as { result?: { total: number; stays: RawStay[] } };
-  if (!result || !Array.isArray(result.stays)) return json({ error: "Search failed" }, 502);
+  const result = await queryContext(endpoint, contextToken, groq).catch(() => undefined);
+  if (!result) return json({ error: "Search failed" }, 502);
 
   const stays = result.stays
     .filter((s) => s.imageUrl)
     .map((s) => ({ ...s, imageUrl: `${s.imageUrl}?w=1000&q=80&auto=format` }));
-  return json({
-    total: result.total,
-    stays,
-    filters: parsed.filters.map(({ key, label }) => ({ key, label })),
-    semantic,
-  });
+  return json({ total: result.total, stays, filters: intent.filters, semantic, interpreter: intent.interpreter });
 }

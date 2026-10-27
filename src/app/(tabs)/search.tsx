@@ -78,6 +78,8 @@ function SearchScreen({ query, initialSource }: { query: string; initialSource: 
   const [sort, setSort] = useState<SearchSort>("best");
   const [sortOpen, setSortOpen] = useState(false);
   const search = useSearchStays(query, initialSource);
+  // The regex reading draws the chips while loading; once the server answers, its reading wins ("no pets" is not "pets").
+  const filters = search.status === "ready" ? search.filters : parsed.filters;
   const stays = useMemo(() => (search.status === "ready" ? sortStays(search.stays, sort) : []), [search, sort]);
 
   // The source travels in the URL because a new query remounts the screen.
@@ -124,7 +126,7 @@ function SearchScreen({ query, initialSource }: { query: string; initialSource: 
         />
       ) : (
         <>
-          {parsed.filters.length > 0 ? (
+          {filters.length > 0 ? (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -132,7 +134,7 @@ function SearchScreen({ query, initialSource }: { query: string; initialSource: 
               contentContainerClassName="gap-3 px-5"
               keyboardShouldPersistTaps="handled"
             >
-              {parsed.filters.map((f) => (
+              {filters.map((f) => (
                 <Chip
                   key={f.key}
                   label={f.label}
@@ -200,7 +202,7 @@ function SearchScreen({ query, initialSource }: { query: string; initialSource: 
               </View>
 
               {stays.length === 0 ? (
-                <NoMatches hasFilters={parsed.filters.length > 0} onClear={() => run("", "results")} />
+                <NoMatches hasFilters={filters.length > 0} onClear={() => run("", "results")} />
               ) : (
                 <View className="gap-3 px-5">
                   {stays.map((p, i) => (

@@ -1,7 +1,7 @@
 import { useAuth } from "@clerk/expo";
 import { useCallback, useEffect, useState } from "react";
 import { posthog } from "@/lib/posthog";
-import { parseQuery } from "@/lib/search";
+import type { IntentFilter, SearchIntent } from "@/lib/search-intent";
 import type { SearchStay } from "@/lib/search-query";
 
 // Search results from `src/app/api/search+api.ts`, which verifies the Clerk session and queries Sanity.
@@ -9,7 +9,14 @@ import type { SearchStay } from "@/lib/search-query";
 
 export type SearchSource = "results" | "suggestion" | "home" | "filter_removed";
 
-type SearchResponse = { total: number; stays: SearchStay[]; semantic: boolean };
+type SearchResponse = {
+  total: number;
+  stays: SearchStay[];
+  semantic: boolean;
+  /** What the server understood, wanted and avoided, so chips can say "No pets". */
+  filters: IntentFilter[];
+  interpreter: SearchIntent["interpreter"];
+};
 type FailureReason = "network" | "unauthorized" | "server";
 
 class SearchError extends Error {
@@ -21,7 +28,7 @@ class SearchError extends Error {
 export type SearchState =
   | { status: "loading" }
   | { status: "error"; retry: () => void }
-  | { status: "ready"; total: number; stays: SearchStay[] };
+  | { status: "ready"; total: number; stays: SearchStay[]; filters: IntentFilter[] };
 
 async function fetchStays(query: string, token: string | null, signal: AbortSignal): Promise<SearchResponse> {
   let res: Response;
@@ -60,12 +67,13 @@ export function useSearchStays(query: string, source: SearchSource): SearchState
       try {
         const data = await fetchStays(query, await getToken(), controller.signal);
         if (controller.signal.aborted) return;
-        const parsed = parseQuery(query);
         posthog?.capture("stay_search_completed", {
           outcome: data.total > 0 ? "results" : "no_results",
           result_count: data.total,
-          filter_count: parsed.filters.length,
-          filter_types: parsed.filters.map((f) => f.key),
+          filter_count: data.filters.length,
+          filter_types: data.filters.map((f) => f.key),
+          avoided_count: data.filters.filter((f) => f.stance === "avoided").length,
+          interpreter: data.interpreter,
           has_soft_intent: data.semantic,
           source,
         });
@@ -82,5 +90,5 @@ export function useSearchStays(query: string, source: SearchSource): SearchState
   }, [key]);
 
   if (!query || outcome.key !== key) return { status: "loading" };
-  return outcome.data ? { status: "ready", total: outcome.data.total, stays: outcome.data.stays } : { status: "error", retry };
+  return outcome.data ? { status: "ready", total: outcome.data.total, stays: outcome.data.stays, filters: outcome.data.filters } : { status: "error", retry };
 }
