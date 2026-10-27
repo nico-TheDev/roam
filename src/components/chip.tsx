@@ -1,5 +1,6 @@
-import { Pressable, PressableProps } from "react-native";
+import { PressableProps } from "react-native";
 import { cn } from "./cn";
+import { PressableScale } from "./pressable-scale";
 import { Text } from "./text";
 
 const variants = {
@@ -23,11 +24,11 @@ export function Chip({
   icon?: React.ReactNode;
 }) {
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityState={{ selected: !!selected }}
       className={cn(
-        "h-11 flex-row items-center justify-center gap-2 rounded-full px-5 active:opacity-70",
+        "h-11 flex-row items-center justify-center gap-2 rounded-full px-5",
         selected ? variants[variant].on : variants[variant].off,
         className,
       )}
@@ -35,6 +36,6 @@ export function Chip({
     >
       {icon}
       <Text variant="caption">{label}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }

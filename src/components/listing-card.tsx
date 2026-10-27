@@ -1,9 +1,11 @@
 import { Image } from "expo-image";
 import { Heart, MapPin, Star } from "lucide-react-native";
-import { Pressable, PressableProps, StyleSheet, View } from "react-native";
+import { PressableProps, StyleSheet, View } from "react-native";
 import { cn } from "./cn";
 import { Badge } from "./badge";
 import { Icon } from "./icon";
+import { IconButton } from "./icon-button";
+import { PressableScale } from "./pressable-scale";
 import { Text } from "./text";
 
 export type ListingCardProps = Omit<PressableProps, "children"> & {
@@ -17,6 +19,8 @@ export type ListingCardProps = Omit<PressableProps, "children"> & {
   amenities?: { label: string; icon?: React.ReactNode }[];
   favorite?: boolean;
   onToggleFavorite?: () => void;
+  /** `image`: small heart over the photo. `inline`: larger heart beside the title (the search results design). */
+  favoritePlacement?: "image" | "inline";
 };
 
 export function ListingCard({
@@ -29,34 +33,49 @@ export function ListingCard({
   amenities = [],
   favorite,
   onToggleFavorite,
+  favoritePlacement = "image",
   className,
   ...props
 }: ListingCardProps) {
+  const favoriteLabel = favorite ? "Remove from favorites" : "Save to favorites";
+  const heart = (size: "sm" | "md") => (
+    <Icon icon={Heart} size={size} className={favorite ? "text-danger" : "text-ink"} filled={favorite} />
+  );
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={`${title}, ${location}, $${price} per night`}
-      className={cn("flex-row gap-4 rounded-lg bg-surface p-3 shadow-card active:opacity-80", className)}
+      className={cn("flex-row gap-3 rounded-lg bg-surface p-3 shadow-card", className)}
       style={{ borderCurve: "continuous" }}
       {...props}
     >
-      <View className="min-h-36 w-36 self-stretch overflow-hidden rounded-md" style={{ borderCurve: "continuous" }}>
+      <View className="min-h-36 w-32 self-stretch overflow-hidden rounded-md" style={{ borderCurve: "continuous" }}>
         <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={favorite ? "Remove from favorites" : "Save to favorites"}
-          accessibilityState={{ selected: !!favorite }}
-          onPress={onToggleFavorite}
-          className="absolute right-2 top-2 size-8 items-center justify-center rounded-full bg-surface"
-        >
-          <Icon icon={Heart} size="sm" className={favorite ? "text-danger" : "text-ink"} filled={favorite} />
-        </Pressable>
+        {favoritePlacement === "image" ? (
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel={favoriteLabel}
+            accessibilityState={{ selected: !!favorite }}
+            onPress={onToggleFavorite}
+            wrapperClassName="absolute right-2 top-2"
+            className="size-8 items-center justify-center rounded-full bg-surface"
+          >
+            {heart("sm")}
+          </PressableScale>
+        ) : null}
       </View>
       <View className="flex-1 justify-between py-1">
         <View className="gap-1">
-          <Text variant="title" className="font-jakarta-bold" numberOfLines={2}>
-            {title}
-          </Text>
+          <View className="flex-row items-start gap-2">
+            <Text variant="title" className="flex-1 font-jakarta-bold" numberOfLines={2}>
+              {title}
+            </Text>
+            {favoritePlacement === "inline" ? (
+              <IconButton label={favoriteLabel} size="sm" selected={false} onPress={onToggleFavorite}>
+                {heart("md")}
+              </IconButton>
+            ) : null}
+          </View>
           <View className="flex-row items-center gap-1">
             <Icon icon={MapPin} size="sm" className="text-muted" />
             <Text variant="small" className="flex-1" numberOfLines={1}>
@@ -80,6 +99,6 @@ export function ListingCard({
           ${price} <Text variant="body" className="font-sans">/ night</Text>
         </Text>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }

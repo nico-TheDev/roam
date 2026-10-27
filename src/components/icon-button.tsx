@@ -1,7 +1,9 @@
-import { Pressable, PressableProps } from "react-native";
+import { PressableProps } from "react-native";
 import { cn } from "./cn";
+import { PressableScale } from "./pressable-scale";
 
-const sizes = { md: "size-14", sm: "size-11" } as const;
+// `tall` is the pill-shaped search button beside the home headline.
+const sizes = { md: "size-14", sm: "size-11", tall: "h-21 w-15" } as const;
 const variants = { soft: "bg-surface-alt", outline: "border border-border bg-surface" } as const;
 
 export function IconButton({
@@ -22,13 +24,13 @@ export function IconButton({
   children: React.ReactNode;
 }) {
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: !!disabled, selected: !!selected }}
       disabled={disabled}
       className={cn(
-        "items-center justify-center rounded-full active:opacity-70",
+        "items-center justify-center rounded-full",
         variants[variant],
         selected && "bg-primary",
         disabled && "opacity-40",
@@ -38,6 +40,6 @@ export function IconButton({
       {...props}
     >
       {children}
-    </Pressable>
+    </PressableScale>
   );
 }

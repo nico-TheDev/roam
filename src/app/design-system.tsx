@@ -34,17 +34,21 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { ScrollView, View } from "react-native";
 import {
   Alert,
+  Avatar,
   Badge,
   Button,
   Chip,
   CodeInput,
   Divider,
+  FeaturedCard,
   Icon,
   IconButton,
   ListingCard,
   PolicyCard,
   ProfileList,
   ProfileRow,
+  SearchField,
+  SearchPill,
   SegmentedControl,
   Section,
   SocialButtons,
@@ -93,6 +97,8 @@ export default function DesignSystem() {
   const [tab, setTab] = useState("home");
   const [favorite, setFavorite] = useState(false);
   const [code, setCode] = useState("12");
+  const [prompt, setPrompt] = useState("");
+  const [query, setQuery] = useState("Cabins in California");
   // ?only=04,07 renders just those sections (handy for screenshots).
   const { only } = useLocalSearchParams<{ only?: string }>();
   const shown = only?.split(",");
@@ -355,6 +361,38 @@ export default function DesignSystem() {
           <Badge tone="success" label="New" />
           <Badge tone="danger" label="20% off" />
           <Badge tone="info" label="Superhost" />
+        </View>
+      </Section>
+      )}
+
+      {show("16") && (
+      <Section number="16" title="Search bars">
+        <SearchPill
+          value={prompt}
+          onChangeText={setPrompt}
+          onSubmit={() => {}}
+          placeholder="quiet pet friendly cabin with hot tub"
+        />
+        <SearchField value={query} onChangeText={setQuery} onSubmit={() => {}} onBack={() => {}} />
+      </Section>
+      )}
+
+      {show("17") && (
+      <Section number="17" title="Featured card">
+        <FeaturedCard
+          title="Modern Cabin with Hot Tub"
+          location="Lake Arrowhead, CA"
+          rating={4.9}
+          imageUrl="https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?auto=format&fit=crop&w=1000&q=80"
+        />
+      </Section>
+      )}
+
+      {show("18") && (
+      <Section number="18" title="Avatar">
+        <View className="flex-row items-center gap-3">
+          <Avatar name="Joanna Reyes" />
+          <Avatar name="Joanna Reyes" size="sm" />
         </View>
       </Section>
       )}
