@@ -61,6 +61,18 @@
       "skillPath": "skills/content-modeling-best-practices/SKILL.md",
       "computedHash": "9f0c62274cf8ccf41dd32fc2f2629f4c9a8e5a920826f30c2eb226d7e796b031"
     },
+    "create-agent-with-sanity-context": {
+      "source": "sanity-io/context",
+      "sourceType": "github",
+      "skillPath": "skills/create-agent-with-sanity-context/SKILL.md",
+      "computedHash": "d441b049631d88b72fe71126a0cbf304706e9f7f0c62ec7cc2aedaeec7b272b8"
+    },
+    "dial-your-context": {
+      "source": "sanity-io/context",
+      "sourceType": "github",
+      "skillPath": "skills/dial-your-context/SKILL.md",
+      "computedHash": "d5b68200c33963df2a9c354a6d8bf1eb0bf5e2a19ffa262547b45ae520d10831"
+    },
     "expo-animation": {
       "source": "expo/skills",
       "sourceType": "github",
@@ -96,6 +108,12 @@
       "sourceType": "github",
       "skillPath": "skills/sanity-best-practices/SKILL.md",
       "computedHash": "4687522eb97a10f408b14ed0f4eb96495f7da96c1d25b291c3f4808f7071182c"
+    },
+    "shape-your-agent": {
+      "source": "sanity-io/context",
+      "sourceType": "github",
+      "skillPath": "skills/shape-your-agent/SKILL.md",
+      "computedHash": "3fd3d3d505bc3c9cecdba960ee260945cd02b973c319103c4ab153c07f0d081f"
     }
   }
 }
