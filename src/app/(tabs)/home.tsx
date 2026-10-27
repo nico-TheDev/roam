@@ -8,6 +8,8 @@ import Animated from "react-native-reanimated";
 import { Alert, Avatar, Button, Chip, FeaturedCard, Icon, IconButton, SearchInputRef, SearchPill, Text, Wordmark } from "@/components";
 import type { Category } from "@/data/properties";
 import { useEntering } from "@/lib/motion";
+import { posthog } from "@/lib/posthog";
+import { parseQuery, searchProperties } from "@/lib/search";
 import { useFeaturedStays } from "@/lib/stays";
 
 const categories: { key: Category | "all"; label: string; icon: LucideIcon }[] = [
@@ -34,6 +36,12 @@ export default function Home() {
 
   const submit = () => {
     const q = text.trim() || EXAMPLE;
+    const parsed = parseQuery(q);
+    posthog?.capture("stay_search_submitted", {
+      source: "home",
+      filter_count: parsed.filters.length,
+      result_count: searchProperties(parsed).length,
+    });
     router.navigate({ pathname: "/search", params: { q } });
   };
 
@@ -83,6 +91,7 @@ export default function Home() {
             icon={<Icon icon={icon} size="md" />}
             selected={category === key}
             onPress={() => {
+              posthog?.capture("stay_category_selected", { category: key });
               setCategory(key);
               setFiltered(true);
             }}

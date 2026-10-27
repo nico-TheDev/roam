@@ -2,6 +2,7 @@
 // Screens never navigate after success: the Stack.Protected guards in _layout.tsx react to the session.
 import { useClerk, useSignIn, useSignUp, useSSO } from "@clerk/expo";
 import { useCallback } from "react";
+import { posthog } from "@/lib/posthog";
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
 export type Provider = "google" | "apple";
@@ -62,7 +63,9 @@ export function useSignUpFlow() {
       if (signUp.status !== "complete") return fail(GENERIC_ERROR);
       try {
         const done = await signUp.finalize({ navigate: finishNavigate });
-        return done.error ? fail(describe(done.error)) : ok;
+        if (done.error) return fail(describe(done.error));
+        posthog?.capture("account_registered", { auth_method: "email" });
+        return ok;
       } catch {
         return fail(TASK_ERROR);
       }
@@ -86,7 +89,9 @@ export function useSignInFlow() {
       if (signIn.status === "complete") {
         try {
           const done = await signIn.finalize({ navigate: finishNavigate });
-          return done.error ? fail(describe(done.error)) : { ok: true, next: "home" };
+          if (done.error) return fail(describe(done.error));
+          posthog?.capture("user_signed_in", { auth_method: "password" });
+          return { ok: true, next: "home" };
         } catch {
           return fail(TASK_ERROR);
         }
@@ -113,7 +118,9 @@ export function useSignInFlow() {
       if (signIn.status !== "complete") return fail(GENERIC_ERROR);
       try {
         const done = await signIn.finalize({ navigate: finishNavigate });
-        return done.error ? fail(describe(done.error)) : ok;
+        if (done.error) return fail(describe(done.error));
+        posthog?.capture("user_signed_in", { auth_method: "email_verification" });
+        return ok;
       } catch {
         return fail(TASK_ERROR);
       }
@@ -133,7 +140,10 @@ export function useProviderAuth() {
       if (provider !== "google") return fail("That sign in isn't available yet.");
       try {
         const { createdSessionId, setActive } = await startSSOFlow({ strategy: "oauth_google" });
-        if (createdSessionId && setActive) await setActive({ session: createdSessionId });
+        if (createdSessionId && setActive) {
+          await setActive({ session: createdSessionId });
+          posthog?.capture("user_signed_in", { auth_method: "google" });
+        }
         return ok;
       } catch (e) {
         return fail(describe(e as Parameters<typeof describe>[0]));

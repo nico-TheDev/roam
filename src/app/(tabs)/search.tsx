@@ -7,6 +7,7 @@ import Animated from "react-native-reanimated";
 import { Button, Chip, Icon, ListingCard, PressableScale, SearchField, Text } from "@/components";
 import type { Amenity, Property } from "@/data/properties";
 import { useEntering } from "@/lib/motion";
+import { posthog } from "@/lib/posthog";
 import { AMENITY_LABELS, SUGGESTED_QUERIES, parseQuery, removeFilter, searchProperties } from "@/lib/search";
 
 const amenityIcons: Record<Amenity, LucideIcon> = {
@@ -43,12 +44,25 @@ function SearchScreen({ query }: { query: string }) {
     Keyboard.dismiss();
     router.setParams({ q: next.trim() });
   };
-  const toggleFavorite = (id: string) =>
+  const submitSearch = (next: string, source: "results" | "suggestion") => {
+    const normalized = next.trim();
+    const nextParsed = parseQuery(normalized);
+    posthog?.capture("stay_search_submitted", {
+      source,
+      filter_count: nextParsed.filters.length,
+      result_count: searchProperties(nextParsed).length,
+    });
+    run(normalized);
+  };
+  const toggleFavorite = (id: string) => {
+    const action = favorites.has(id) ? "removed" : "saved";
+    posthog?.capture("stay_favorite_toggled", { property_id: id, action });
     setFavorites((prev) => {
       const next = new Set(prev);
       if (!next.delete(id)) next.add(id);
       return next;
     });
+  };
 
   return (
     <ScrollView
@@ -62,14 +76,19 @@ function SearchScreen({ query }: { query: string }) {
         <SearchField
           value={text}
           onChangeText={setText}
-          onSubmit={() => run(text)}
+          onSubmit={() => submitSearch(text, "results")}
           onBack={() => router.navigate("/home")}
           placeholder="Describe your stay"
         />
       </View>
 
       {!query ? (
-        <Suggestions onPick={(s) => run(s)} />
+        <Suggestions
+          onPick={(s) => {
+            posthog?.capture("search_suggestion_selected");
+            submitSearch(s, "suggestion");
+          }}
+        />
       ) : (
         <>
           {parsed.filters.length > 0 ? (
@@ -81,7 +100,15 @@ function SearchScreen({ query }: { query: string }) {
               keyboardShouldPersistTaps="handled"
             >
               {parsed.filters.map((f) => (
-                <Chip key={f.key} label={f.label} selected onPress={() => run(removeFilter(query, f))} />
+                <Chip
+                  key={f.key}
+                  label={f.label}
+                  selected
+                  onPress={() => {
+                    posthog?.capture("search_filter_removed", { filter_type: f.key });
+                    run(removeFilter(query, f));
+                  }}
+                />
               ))}
             </ScrollView>
           ) : null}

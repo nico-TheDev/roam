@@ -4,6 +4,7 @@ import { useState } from "react";
 import { View } from "react-native";
 import { Avatar, Button, Text } from "@/components";
 import { useSignOut } from "@/lib/auth";
+import { posthog } from "@/lib/posthog";
 
 // Placeholder until the profile design is built. Holds Sign out for now.
 export default function Profile() {
@@ -16,7 +17,8 @@ export default function Profile() {
     setLoading(true);
     const result = await signOut();
     // On success the route guards move to onboarding and this screen unmounts.
-    if (!result.ok) setLoading(false);
+    if (result.ok) posthog?.capture("user_signed_out");
+    else setLoading(false);
   };
 
   return (

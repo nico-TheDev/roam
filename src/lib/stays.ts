@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Category } from "@/data/properties";
+import { posthogLog } from "@/lib/posthog-logs";
 
 // Live stays from Sanity for the Home feed. The dataset is public and nothing here is secret, so this reads the CDN directly.
 // Only fixed queries live here: no guest text ever reaches GROQ.
@@ -66,9 +67,15 @@ export function useFeaturedStays(): FeaturedState {
   useEffect(() => {
     const controller = new AbortController();
     getFeaturedStays(controller.signal)
-      .then((stays) => setOutcome({ attempt, stays }))
+      .then((stays) => {
+        posthogLog.info("featured_stays_loaded", { attempt, stay_count: stays.all.length });
+        setOutcome({ attempt, stays });
+      })
       .catch(() => {
-        if (!controller.signal.aborted) setOutcome({ attempt });
+        if (!controller.signal.aborted) {
+          posthogLog.warn("featured_stays_load_failed", { attempt });
+          setOutcome({ attempt });
+        }
       });
     return () => controller.abort();
   }, [attempt]);
