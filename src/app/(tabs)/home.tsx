@@ -6,10 +6,9 @@ import { useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { Alert, Avatar, Button, Chip, FeaturedCard, Icon, IconButton, SearchInputRef, SearchPill, Text, Wordmark } from "@/components";
-import type { Category } from "@/data/properties";
+import type { Category } from "@/lib/search";
 import { useEntering } from "@/lib/motion";
 import { posthog } from "@/lib/posthog";
-import { parseQuery, searchProperties } from "@/lib/search";
 import { useFeaturedStays } from "@/lib/stays";
 
 const categories: { key: Category | "all"; label: string; icon: LucideIcon }[] = [
@@ -36,13 +35,7 @@ export default function Home() {
 
   const submit = () => {
     const q = text.trim() || EXAMPLE;
-    const parsed = parseQuery(q);
-    posthog?.capture("stay_search_submitted", {
-      source: "home",
-      filter_count: parsed.filters.length,
-      result_count: searchProperties(parsed).length,
-    });
-    router.navigate({ pathname: "/search", params: { q } });
+    router.navigate({ pathname: "/search", params: { q, from: "home" } });
   };
 
   const name = user?.fullName ?? user?.firstName ?? "Guest";
@@ -117,7 +110,9 @@ export default function Home() {
       ) : (
         featuredStays.stays[category].map((p, i) => (
           <FeaturedRow key={p.id} index={filtered ? i : i + 4}>
-            <FeaturedCard title={p.title} location={`${p.city}, ${p.state}`} rating={p.rating} imageUrl={p.imageUrl} />
+            <FeaturedCard
+              onPress={() => router.push({ pathname: "/stay/[id]", params: { id: p.id, from: "home" } })}
+              title={p.title} location={`${p.city}, ${p.state}`} rating={p.rating} imageUrl={p.imageUrl} />
           </FeaturedRow>
         ))
       )}

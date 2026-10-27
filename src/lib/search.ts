@@ -1,7 +1,25 @@
-import { Amenity, Category, Property, Tag, properties } from "@/data/properties";
+// Parses a guest's sentence into exact filters and soft intent. Pure functions, no React: the Search screen uses it
+// for its chips and `src/app/api/search+api.ts` uses it to build the Sanity query. Prices and guest counts are parsed in code.
 
-// Local stand-in for Sanity (exact constraints as filters, soft intent as ranking). Pure functions, no React.
-// Prices and guest counts are parsed here in code.
+export type Category = "cabin" | "beach" | "city" | "villa";
+export type Amenity =
+  | "hot-tub"
+  | "pool"
+  | "fireplace"
+  | "ocean-view"
+  | "wifi"
+  | "workspace"
+  | "forest-view"
+  | "fire-pit"
+  | "kitchen"
+  | "lake-view"
+  | "bbq"
+  | "beach-access"
+  | "air-conditioning"
+  | "skyline-view"
+  | "mountain-view"
+  | "ev-charger";
+export type Tag = "quiet" | "cozy" | "secluded" | "romantic" | "family" | "luxury" | "modern";
 
 export type FilterKey = "category" | "price" | "guests" | "pets" | "place" | `amenity:${Amenity}` | `tag:${Tag}`;
 
@@ -41,6 +59,16 @@ export const AMENITY_LABELS: Record<Amenity, string> = {
   "ocean-view": "Ocean View",
   wifi: "Wi-Fi",
   workspace: "Workspace",
+  "forest-view": "Forest View",
+  "fire-pit": "Fire Pit",
+  kitchen: "Kitchen",
+  "lake-view": "Lake View",
+  bbq: "BBQ",
+  "beach-access": "Beach Access",
+  "air-conditioning": "Air Conditioning",
+  "skyline-view": "Skyline View",
+  "mountain-view": "Mountain View",
+  "ev-charger": "EV Charger",
 };
 
 const CATEGORY_WORDS: Record<Category, RegExp> = {
@@ -57,6 +85,16 @@ const AMENITY_WORDS: Record<Amenity, RegExp> = {
   "ocean-view": /\b(?:ocean[- ]?views?|sea[- ]?views?)\b/gi,
   wifi: /\b(?:wi-?fi|internet)\b/gi,
   workspace: /\b(?:workspace|work[- ]from[- ]home|desk)\b/gi,
+  "forest-view": /\bforest[- ]?views?\b/gi,
+  "fire-pit": /\bfire[- ]?pits?\b/gi,
+  kitchen: /\bkitchens?\b/gi,
+  "lake-view": /\blake[- ]?views?\b/gi,
+  bbq: /\b(?:bbq|barbecue|grill)\b/gi,
+  "beach-access": /\bbeach[- ]access\b/gi,
+  "air-conditioning": /\b(?:air[- ]conditioning|a\/c)\b/gi,
+  "skyline-view": /\bskyline[- ]?views?\b/gi,
+  "mountain-view": /\bmountain[- ]?views?\b/gi,
+  "ev-charger": /\b(?:ev[- ]charger|ev[- ]charging)\b/gi,
 };
 
 const TAG_WORDS: Record<Tag, RegExp> = {
@@ -81,18 +119,39 @@ const STATES: Record<string, string> = {
   CO: "Colorado",
   FL: "Florida",
   HI: "Hawaii",
+  IL: "Illinois",
+  LA: "Louisiana",
+  MT: "Montana",
+  NC: "North Carolina",
   NY: "New York",
   OR: "Oregon",
+  TN: "Tennessee",
   TX: "Texas",
   WA: "Washington",
 };
+
+// Every city a stay is in today. A place filter can only match a city or state listed here.
+const CITIES = [
+  "Asheville", "Aspen", "Austin", "Bend", "Big Bear Lake", "Brooklyn", "Cannon Beach", "Chicago", "Destin",
+  "Fredericksburg", "Gatlinburg", "Healdsburg", "Kailua-Kona", "Lake Arrowhead", "Los Angeles", "Malibu", "Miami",
+  "Monte Rio", "Nags Head", "Napa", "New Orleans", "New York", "Paia", "Palm Springs", "San Diego", "Santa Barbara",
+  "Santa Cruz", "Seattle", "Truckee", "Whitefish",
+];
 
 const STOPWORDS = new Set(
   "a an the in on at by for with and or of to me my i we want need find show looking stay stays place places home house under below near around night per nice great good".split(" "),
 );
 
-// Place names come from the data (cities) plus the state names, so a place filter can only match what exists.
-const PLACES = [...new Set([...properties.map((p) => p.city), ...Object.values(STATES)])];
+// Cities first, so "New York" the city wins over "New York" the state.
+const PLACES = [...new Set([...CITIES, ...Object.values(STATES)])];
+
+/** What a place name filters on: a city, or else a state code. */
+export function placeTarget(place: string): { city: string } | { state: string } {
+  const city = CITIES.find((c) => c.toLowerCase() === place.toLowerCase());
+  if (city) return { city };
+  const state = Object.entries(STATES).find(([, name]) => name.toLowerCase() === place.toLowerCase())?.[0];
+  return { state: state ?? place };
+}
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -179,34 +238,6 @@ export function parseQuery(text: string): ParsedQuery {
 /** Text without the pieces a filter came from, so removing a chip updates the search box too. */
 export function removeFilter(text: string, filter: Filter) {
   return filter.spans.reduce((s, span) => s.replace(span, " "), text).replace(/\s+/g, " ").trim();
-}
-
-function inPlace(p: Property, place: string) {
-  return p.city.toLowerCase() === place.toLowerCase() || STATES[p.state]?.toLowerCase() === place.toLowerCase();
-}
-
-/** Hard constraints filter, soft intent and leftover words rank, rating breaks ties. */
-export function searchProperties(parsed: ParsedQuery): Property[] {
-  return properties
-    .filter(
-      (p) =>
-        (parsed.maxPrice === undefined || p.price <= parsed.maxPrice) &&
-        (parsed.guests === undefined || p.maxGuests >= parsed.guests) &&
-        (!parsed.pets || p.petFriendly) &&
-        (!parsed.category || p.category === parsed.category) &&
-        (!parsed.place || inPlace(p, parsed.place)) &&
-        parsed.amenities.every((a) => p.amenities.includes(a)),
-    )
-    .map((p) => {
-      const haystack = `${p.title} ${p.city} ${STATES[p.state] ?? ""} ${CATEGORY_LABELS[p.category]}`.toLowerCase();
-      const hits = parsed.keywords.filter((k) => haystack.includes(k)).length;
-      const score = parsed.tags.filter((t) => p.tags.includes(t)).length * 2 + hits + p.rating / 10;
-      return { p, hits, score };
-    })
-    // With nothing recognized, leftover words are all there is to go on, so they have to match.
-    .filter(({ hits }) => parsed.filters.length > 0 || parsed.keywords.length === 0 || hits > 0)
-    .sort((a, b) => b.score - a.score)
-    .map(({ p }) => p);
 }
 
 export const SUGGESTED_QUERIES = [

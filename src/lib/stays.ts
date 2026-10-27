@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Category } from "@/data/properties";
+import type { Category } from "@/lib/search";
 import { posthogLog } from "@/lib/posthog-logs";
 
 // Live stays from Sanity for the Home feed. The dataset is public and nothing here is secret, so this reads the CDN directly.

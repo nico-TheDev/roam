@@ -82,6 +82,16 @@
   font-size: 20px;
   line-height: 26px;
 }
+@utility text-title-sm {
+  font-family: "PlusJakartaSans-Bold";
+  font-size: 16px;
+  line-height: 20px;
+}
+@utility text-micro {
+  font-family: "PlusJakartaSans-Regular";
+  font-size: 12px;
+  line-height: 16px;
+}
 @utility text-body {
   font-family: "PlusJakartaSans-Regular";
   font-size: 16px;

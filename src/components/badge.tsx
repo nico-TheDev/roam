@@ -11,6 +11,7 @@ const tones = {
 } as const;
 
 const sizes = {
+  xs: "h-7 px-2.5 gap-1",
   md: "h-10 px-4 gap-2",
   sm: "h-8 px-3 gap-1.5",
 } as const;
@@ -39,7 +40,7 @@ export function Badge({
       {...props}
     >
       {icon}
-      <Text variant={size === "sm" ? "small" : "caption"} className="text-ink">
+      <Text variant={size === "xs" ? "micro" : size === "sm" ? "small" : "caption"} className="text-ink">
         {label}
       </Text>
     </View>

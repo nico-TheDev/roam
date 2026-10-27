@@ -49,7 +49,7 @@ export function ListingCard({
       style={{ borderCurve: "continuous" }}
       {...props}
     >
-      <View className="min-h-36 w-32 self-stretch overflow-hidden rounded-md" style={{ borderCurve: "continuous" }}>
+      <View className="aspect-square w-36 self-start overflow-hidden rounded-md" style={{ borderCurve: "continuous" }}>
         <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
         {favoritePlacement === "image" ? (
           <PressableScale
@@ -67,7 +67,7 @@ export function ListingCard({
       <View className="flex-1 justify-between py-1">
         <View className="gap-1">
           <View className="flex-row items-start gap-2">
-            <Text variant="title" className="flex-1 font-jakarta-bold" numberOfLines={2}>
+            <Text variant="title-sm" className="flex-1" numberOfLines={2}>
               {title}
             </Text>
             {favoritePlacement === "inline" ? (
@@ -78,25 +78,25 @@ export function ListingCard({
           </View>
           <View className="flex-row items-center gap-1">
             <Icon icon={MapPin} size="sm" className="text-muted" />
-            <Text variant="small" className="flex-1" numberOfLines={1}>
+            <Text variant="micro" className="flex-1" numberOfLines={1}>
               {location}
             </Text>
           </View>
           <View className="flex-row items-center gap-1">
             <Icon icon={Star} size="sm" className="text-primary" filled />
-            <Text variant="caption">{rating.toFixed(1)}</Text>
-            <Text variant="small">
+            <Text variant="micro" className="text-ink">{rating.toFixed(1)}</Text>
+            <Text variant="micro">
               ({reviews})
             </Text>
           </View>
         </View>
         <View className="flex-row flex-wrap gap-2">
           {amenities.map((a) => (
-            <Badge key={a.label} label={a.label} icon={a.icon} tone="neutral" size="sm" />
+            <Badge key={a.label} label={a.label} icon={a.icon} tone="neutral" size="xs" />
           ))}
         </View>
-        <Text variant="title" className="font-jakarta-bold">
-          ${price} <Text variant="body" className="font-sans">/ night</Text>
+        <Text variant="title-sm">
+          ${price} <Text variant="micro">/ night</Text>
         </Text>
       </View>
     </PressableScale>

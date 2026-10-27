@@ -54,8 +54,9 @@ export function SearchField({
   onBack,
   inputRef,
   className,
+  trailing,
   ...props
-}: Props & { onBack: () => void }) {
+}: Props & { onBack: () => void; /** Sits inside the pill, on the right (the filter icon). */ trailing?: React.ReactNode }) {
   const placeholderColor = useTokenColor("--color-muted");
   return (
     <View className={cn("flex-row items-center gap-3", className)}>
@@ -77,6 +78,7 @@ export function SearchField({
           clearButtonMode="while-editing"
           {...props}
         />
+        {trailing}
       </View>
     </View>
   );

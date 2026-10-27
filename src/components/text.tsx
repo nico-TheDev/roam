@@ -8,9 +8,11 @@ const variants = {
   "headline-sm": "text-headline-sm",
   heading: "text-heading",
   title: "text-title",
+  "title-sm": "text-title-sm",
   lead: "text-lead",
   body: "text-body",
   small: "text-small",
+  micro: "text-micro",
   caption: "text-caption",
   button: "text-button",
 } as const;
@@ -21,9 +23,11 @@ const defaultColors: Record<keyof typeof variants, string> = {
   "headline-sm": "text-ink",
   heading: "text-ink",
   title: "text-ink",
+  "title-sm": "text-ink",
   lead: "text-muted",
   body: "text-muted",
   small: "text-muted",
+  micro: "text-muted",
   caption: "text-ink",
   button: "text-ink",
 };
