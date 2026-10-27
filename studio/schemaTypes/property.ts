@@ -36,6 +36,13 @@ export const property = defineType({
       validation: (rule) => rule.required().min(5),
     }),
     defineField({
+      name: 'listed',
+      type: 'boolean',
+      group: 'basics',
+      description: 'Turn off to hide the stay from guests. Missing counts as on.',
+      initialValue: true,
+    }),
+    defineField({
       name: 'rating',
       type: 'number',
       group: 'basics',

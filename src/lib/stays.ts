@@ -25,7 +25,7 @@ const CATEGORIES: Category[] = ["cabin", "beach", "city", "villa"];
 
 const PROJECTION = `{ "id": _id, title, category, "city": location.city, "state": location.state, rating, "imageUrl": images[0].asset->url }`;
 const featured = (filter: string) =>
-  `*[_type == "property"${filter}] | order(rating desc, reviewCount desc)[0...${PER_CATEGORY}]${PROJECTION}`;
+  `*[_type == "property" && listed != false${filter}] | order(rating desc, reviewCount desc)[0...${PER_CATEGORY}]${PROJECTION}`;
 
 // One request returns every category, so switching chips on Home needs no further request.
 const FEATURED_QUERY = `{ "all": ${featured("")}, ${CATEGORIES.map((c) => `"${c}": ${featured(` && category == "${c}"`)}`).join(", ")} }`;

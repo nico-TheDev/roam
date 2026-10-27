@@ -31,8 +31,10 @@ import {
   Wifi,
   TreePine,
   FileText,
+  Bell,
 } from "lucide-react-native";
 import { useState } from "react";
+import { emptyDraft } from "@/lib/stay-draft";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { ScrollView, View } from "react-native";
 import {
@@ -47,15 +49,25 @@ import {
   ChatInput,
   Chip,
   CodeInput,
+  DeviceRow,
   Divider,
   FeaturedCard,
   HostRow,
   Icon,
   IconButton,
   ListingCard,
+  PhotoGrid,
   PolicyCard,
   ProfileList,
   ProfileRow,
+  ProfileSection,
+  BookingCard,
+  HostBookingRow,
+  HostStayCard,
+  BasicsFields,
+  PricingFields,
+  DateRangeCalendar,
+  PriceBreakdown,
   RatingBox,
   SearchField,
   SearchPill,
@@ -63,6 +75,7 @@ import {
   Section,
   SocialButtons,
   StayGallery,
+  StatsRow,
   Stepper,
   TabBar,
   Text,
@@ -106,12 +119,14 @@ export default function DesignSystem() {
   const [filter, setFilter] = useState("Cabins");
   const [view, setView] = useState<"list" | "map">("list");
   const [on, setOn] = useState(true);
+  const [hostListed, setHostListed] = useState(true);
   const [guests, setGuests] = useState(1);
   const [tab, setTab] = useState("home");
   const [favorite, setFavorite] = useState(false);
   const [code, setCode] = useState("12");
   const [prompt, setPrompt] = useState("");
   const [query, setQuery] = useState("Cabins in California");
+  const [stayDates, setStayDates] = useState<{ checkIn: string | null; checkOut: string | null }>({ checkIn: "2026-12-10", checkOut: "2026-12-13" });
   // ?only=04,07 renders just those sections (handy for screenshots).
   const { only } = useLocalSearchParams<{ only?: string }>();
   const shown = only?.split(",");
@@ -447,6 +462,92 @@ export default function DesignSystem() {
           source="Pet policy · Roam policy"
         />
         <ChatInput onSend={() => {}} />
+      </Section>
+      )}
+      {show("21") && (
+      <Section number="21" title="Account">
+        <StatsRow
+          stats={[
+            { label: "Trips", value: "0" },
+            { label: "Saved", value: "0", onPress: () => {} },
+            { label: "Rating", value: "\u2013", star: true },
+          ]}
+        />
+        <ProfileSection title="Preferences">
+          <ProfileRow icon={<Icon icon={Bell} size="lg" />} label="Notifications" detail="Coming soon" disabled />
+          <ProfileRow icon={<Icon icon={User} size="lg" />} label="Personal info" />
+        </ProfileSection>
+        <DeviceRow label="Phone · Expo Go" place="San Francisco, United States" lastActive="Active now" mobile current />
+        <DeviceRow label="Desktop · Chrome" place="Austin, United States" lastActive="2 days ago" />
+        <Button title="Delete account" variant="danger" />
+      </Section>
+      )}
+      {show("22") && (
+      <Section number="22" title="Booking">
+        <DateRangeCalendar
+          checkIn={stayDates.checkIn}
+          checkOut={stayDates.checkOut}
+          onChange={setStayDates}
+          blocked={[{ checkIn: "2026-12-14", checkOut: "2026-12-17" }]}
+          today="2026-12-01"
+        />
+        <PriceBreakdown breakdown={{ nights: 3, nightlyCents: 28900, cleaningCents: 9500 }} totalCents={96200} />
+        <BookingCard
+          booking={{
+            id: "1",
+            stayId: "x",
+            checkIn: "2026-12-10",
+            checkOut: "2026-12-13",
+            guests: 2,
+            amountCents: 96200,
+            breakdown: { nights: 3, nightlyCents: 28900, cleaningCents: 9500 },
+            stay: { title: "Modern Cabin with Hot Tub", city: "Lake Arrowhead", state: "CA", imageUrl: null, cancellationPolicy: null },
+          }}
+        />
+      </Section>
+      )}
+      {show("23") && (
+      <Section number="23" title="Photo grid">
+        <PhotoGrid
+          photos={[
+            { key: "a", uri: "https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400", status: "done" },
+            { key: "b", uri: "https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?w=400", status: "done" },
+            { key: "c", uri: "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=400", status: "uploading" },
+            { key: "d", uri: "https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=400", status: "failed" },
+          ]}
+          min={5}
+          max={30}
+          onAdd={() => {}}
+          onRemove={() => {}}
+          onRetry={() => {}}
+          onMakeCover={() => {}}
+        />
+      </Section>
+      )}
+      {show("24") && (
+      <Section number="24" title="Host stays">
+        <HostStayCard
+          title="Modern Cabin with Hot Tub"
+          location="Lake Arrowhead, CA"
+          price={289}
+          imageUrl="https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400"
+          listed={hostListed}
+          nextBooking="Dec 10 – 13, 2026 · 2 guests"
+          onToggleListed={setHostListed}
+        />
+        <HostStayCard
+          title="Quiet Beach House"
+          location="Malibu, CA"
+          price={410}
+          imageUrl={null}
+          listed={false}
+          nextBooking={null}
+          onToggleListed={() => {}}
+        />
+        <HostBookingRow checkIn="2026-12-10" checkOut="2026-12-13" nights={3} guests={2} amountCents={96200} />
+        <HostBookingRow checkIn="2026-10-27" checkOut="2026-10-30" nights={3} guests={2} amountCents={96200} />
+        <PricingFields draft={{ ...emptyDraft(), price: "289", cleaning: "95" }} onChange={() => {}} errors={{}} />
+        <BasicsFields draft={{ ...emptyDraft(), title: "Modern Cabin" }} onChange={() => {}} errors={{ city: "Use 2 to 60 characters." }} />
       </Section>
       )}
     </ScrollView>

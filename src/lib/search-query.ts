@@ -23,7 +23,7 @@ export type SearchStay = {
   imageUrl: string;
 };
 
-const PROJECTION = `{ "id": _id, title, category, "city": location.city, "state": location.state, rating, "reviewCount": coalesce(reviewCount, 0), "price": nightlyPrice, "amenities": coalesce(amenities, []), "petsAllowed": coalesce(petsAllowed, false), "imageUrl": images[0].asset->url }`;
+export const PROJECTION = `{ "id": _id, title, category, "city": location.city, "state": location.state, rating, "reviewCount": coalesce(reviewCount, 0), "price": nightlyPrice, "amenities": coalesce(amenities, []), "petsAllowed": coalesce(petsAllowed, false), "imageUrl": images[0].asset->url }`;
 
 const AMENITIES = new Set<string>(Object.keys(AMENITY_LABELS));
 const CATEGORIES = new Set<string>(Object.keys(CATEGORY_LABELS));
@@ -42,7 +42,7 @@ function int(value: number) {
 }
 
 export function buildSearchQuery(intent: SearchIntent) {
-  const conditions = ['_type == "property"'];
+  const conditions = ['_type == "property"', "listed != false"];
 
   if (intent.pets === "wanted") conditions.push("petsAllowed == true");
   if (intent.pets === "avoided") conditions.push("petsAllowed != true");

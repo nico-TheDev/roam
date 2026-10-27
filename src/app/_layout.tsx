@@ -1,5 +1,6 @@
 import { ClerkProvider, useAuth, useUser } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
+import { StripeProvider } from "@/lib/stripe-native";
 import "../global.css";
 
 import { useFonts } from "expo-font";
@@ -11,6 +12,8 @@ import { posthog } from "@/lib/posthog";
 import { posthogLog } from "@/lib/posthog-logs";
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
+// Public by design. Without it the booking sheet says payments aren't set up instead of failing.
+const stripePublishableKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 
 if (!publishableKey) {
   throw new Error(
@@ -34,7 +37,9 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
   const routes = (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <Routes />
+      <StripeProvider publishableKey={stripePublishableKey || "pk_test_not_configured"} urlScheme="roam">
+        <Routes />
+      </StripeProvider>
     </ClerkProvider>
   );
 
@@ -84,14 +89,32 @@ function Routes() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={!!isSignedIn}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="saved" />
         <Stack.Screen name="stay/[id]/index" />
         <Stack.Screen name="stay/[id]/ask" />
+        <Stack.Screen name="booking/[id]" options={{ gestureEnabled: false }} />
+        <Stack.Screen name="stay/[id]/book" options={{ presentation: "modal" }} />
         <Stack.Screen
           name="stay/[id]/policies"
           options={{ presentation: "formSheet", sheetAllowedDetents: [0.6, 1], sheetGrabberVisible: true }}
         />
         <Stack.Screen
           name="stay/[id]/host"
+          options={{ presentation: "formSheet", sheetAllowedDetents: [0.6, 1], sheetGrabberVisible: true }}
+        />
+        <Stack.Screen name="host/index" />
+        <Stack.Screen name="host/add" />
+        <Stack.Screen
+          name="host/start"
+          options={{ presentation: "formSheet", sheetAllowedDetents: [0.6, 1], sheetGrabberVisible: true }}
+        />
+        <Stack.Screen name="host/stay/[id]" />
+        <Stack.Screen
+          name="account/personal"
+          options={{ presentation: "formSheet", sheetAllowedDetents: [0.6, 1], sheetGrabberVisible: true }}
+        />
+        <Stack.Screen
+          name="account/settings"
           options={{ presentation: "formSheet", sheetAllowedDetents: [0.6, 1], sheetGrabberVisible: true }}
         />
       </Stack.Protected>

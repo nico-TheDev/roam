@@ -31,6 +31,8 @@ export type StayPolicy = {
 
 export type StayDetails = {
   id: string;
+  /** False when the host paused the stay; it still opens by link but can't be booked. */
+  listed: boolean;
   title: string;
   category: Category;
   rating: number;
@@ -62,7 +64,7 @@ const API_VERSION = "2026-02-01";
 
 const POLICY = `{ title, kind, summary, body }`;
 const QUERY = `*[_type == "property" && _id == $id][0]{
-  "id": _id, title, category, rating, reviewCount,
+  "id": _id, "listed": listed != false, title, category, rating, reviewCount,
   "city": location.city, "state": location.state,
   nightlyPrice, cleaningFee, minNights, maxGuests, petsAllowed, amenities,
   "imageUrls": images[].asset->url,

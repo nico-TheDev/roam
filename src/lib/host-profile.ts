@@ -21,7 +21,7 @@ const PROJECT_ID = process.env.EXPO_PUBLIC_SANITY_PROJECT_ID;
 const DATASET = process.env.EXPO_PUBLIC_SANITY_DATASET;
 const API_VERSION = "2026-02-01";
 
-const QUERY = `*[_type == "property" && host._ref == $hostId && _id != $stayId] | order(rating desc, reviewCount desc){
+const QUERY = `*[_type == "property" && listed != false && host._ref == $hostId && _id != $stayId] | order(rating desc, reviewCount desc){
   "id": _id, title, category, "city": location.city, "state": location.state,
   rating, reviewCount, nightlyPrice, "imageUrl": images[0].asset->url
 }`;
