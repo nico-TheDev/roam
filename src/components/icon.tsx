@@ -1,11 +1,15 @@
 import { styled } from "nativewind";
 import { createElement } from "react";
+import { Platform } from "react-native";
 import type { LucideIcon } from "lucide-react-native";
 
 // styled() must run outside render, so each icon is wrapped once and cached.
 const cache = new WeakMap<LucideIcon, LucideIcon>();
 
+// On web, NativeWind's styled() would hand the SVG a style object as className. The browser already resolves
+// `currentColor` from the className's CSS color, so the icon takes the class as is.
 function styledIcon(icon: LucideIcon) {
+  if (Platform.OS === "web") return icon;
   let wrapped = cache.get(icon);
   if (!wrapped) {
     wrapped = styled(icon, {

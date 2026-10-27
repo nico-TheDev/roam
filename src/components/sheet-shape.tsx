@@ -1,13 +1,26 @@
 import { styled } from "nativewind";
-import { useState } from "react";
-import { LayoutChangeEvent, View, ViewProps } from "react-native";
+import { ComponentProps, useState } from "react";
+import { LayoutChangeEvent, Platform, View, ViewProps } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { cn } from "./cn";
 
 // Same wrapper idea as Icon: className `text-*` becomes the SVG `color`, which `currentColor` reads.
-const ThemedSvg = styled(Svg, {
-  className: { target: false, nativeStyleMapping: { color: "color" } },
-});
+// react-native-svg drops className on web, so a wrapper View carries the `text-*` class and the SVG inherits it
+// through `currentColor`.
+function WebThemedSvg({ className, style, ...props }: ComponentProps<typeof Svg>) {
+  return (
+    <View className={className} style={style} pointerEvents="none">
+      <Svg {...props} />
+    </View>
+  );
+}
+
+const ThemedSvg =
+  Platform.OS === "web"
+    ? WebThemedSvg
+    : styled(Svg, {
+        className: { target: false, nativeStyleMapping: { color: "color" } },
+      });
 
 /** How far the top edge sweeps down from its left corner to its right corner, in points. */
 const DROP = 96;
