@@ -5,6 +5,7 @@ import { Text } from "./text";
 const variants = {
   primary: "bg-primary active:opacity-80",
   secondary: "bg-surface border border-border active:bg-surface-alt",
+  danger: "bg-danger-soft active:opacity-80",
 } as const;
 
 const sizes = {

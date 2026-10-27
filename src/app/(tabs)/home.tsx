@@ -5,7 +5,7 @@ import type { LucideIcon } from "lucide-react-native";
 import { useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
 import Animated from "react-native-reanimated";
-import { Alert, Avatar, Button, Chip, FeaturedCard, Icon, IconButton, SearchInputRef, SearchPill, Text, Wordmark } from "@/components";
+import { Alert, Avatar, Button, Chip, FeaturedCard, Icon, IconButton, PressableScale, SearchInputRef, SearchPill, Text, Wordmark } from "@/components";
 import type { Category } from "@/lib/search";
 import { useEntering } from "@/lib/motion";
 import { posthog } from "@/lib/posthog";
@@ -50,7 +50,14 @@ export default function Home() {
     >
       <Animated.View entering={useEntering(0)} className="flex-row items-center justify-between">
         <Wordmark size="sm" tagline={false} />
-        <Avatar name={name} imageUrl={user?.imageUrl} />
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel="Open your profile"
+          onPress={() => router.navigate("/profile")}
+          className="rounded-full"
+        >
+          <Avatar name={name} imageUrl={user?.imageUrl} />
+        </PressableScale>
       </Animated.View>
 
       <Animated.View entering={useEntering(1)} className="flex-row items-center justify-between gap-4">

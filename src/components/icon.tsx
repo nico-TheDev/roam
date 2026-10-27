@@ -2,6 +2,7 @@ import { styled } from "nativewind";
 import { createElement } from "react";
 import { Platform } from "react-native";
 import type { LucideIcon } from "lucide-react-native";
+import { useTokenColor } from "@/lib/use-token-color";
 
 // styled() must run outside render, so each icon is wrapped once and cached.
 const cache = new WeakMap<LucideIcon, LucideIcon>();
@@ -28,6 +29,7 @@ export function Icon({
   size = "md",
   className = "text-ink",
   filled,
+  fillColor,
   ...props
 }: {
   icon: LucideIcon;
@@ -36,11 +38,19 @@ export function Icon({
   strokeWidth?: number;
   /** Fill the shape with the icon color. */
   filled?: boolean;
+  /** Token color value (from `useTokenColor`) for fill and outline together, when both must match exactly. */
+  fillColor?: string;
 }) {
+  // `fill="currentColor"` doesn't pick up the class color on native (only the outline does), so a filled icon
+  // reads its `text-<token>` class as a color value and paints fill and outline with it.
+  const token = className.match(/(?:^|\s)text-([a-z-]+)(?=\s|$)/)?.[1] ?? "ink";
+  const tokenColor = useTokenColor(`--color-${token}`);
+  const color = fillColor ?? (filled ? tokenColor : undefined);
   return createElement(styledIcon(icon), {
     size: sizes[size],
     className,
-    fill: filled ? "currentColor" : "none",
+    fill: color ?? "none",
+    ...(color ? { stroke: color } : {}),
     ...props,
   });
 }

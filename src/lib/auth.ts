@@ -14,10 +14,11 @@ const ok: AuthResult = { ok: true };
 const GENERIC_ERROR = "Something went wrong. Try again in a moment.";
 const TASK_ERROR = "We couldn't finish setting up your account. Contact support and we'll sort it out.";
 
-const fail = (error: string) => ({ ok: false, error }) as const;
+export const fail = (error: string) => ({ ok: false, error }) as const;
+export { GENERIC_ERROR };
 
 // Clerk's long messages are written for end users ("Password has been found in an online data breach...").
-function describe(error: { errors?: { longMessage?: string; message?: string }[]; message?: string } | null | undefined) {
+export function describe(error: { errors?: { longMessage?: string; message?: string }[]; message?: string } | null | undefined) {
   const first = error?.errors?.[0];
   return first?.longMessage ?? first?.message ?? error?.message ?? GENERIC_ERROR;
 }
