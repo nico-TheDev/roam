@@ -1,52 +1,24 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
-  Bath,
   Check,
   ChevronDown,
-  Flame,
-  Laptop,
-  Mountain,
-  PawPrint,
   SearchX,
   SlidersHorizontal,
   Sparkles,
-  Trees,
-  Utensils,
-  Waves,
-  Wifi,
 } from "lucide-react-native";
-import type { LucideIcon } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { Keyboard, ScrollView, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { Alert, Button, Chip, Icon, ListingCard, PressableScale, SearchField, Text } from "@/components";
 import { useEntering } from "@/lib/motion";
 import { posthog } from "@/lib/posthog";
-import { AMENITY_LABELS, SUGGESTED_QUERIES, parseQuery, removeFilter } from "@/lib/search";
-import type { Amenity } from "@/lib/search";
+import { SUGGESTED_QUERIES, parseQuery, removeFilter } from "@/lib/search";
+import { useSavedStays } from "@/lib/saved";
 import { sortStays } from "@/lib/search-query";
-import type { SearchSort, SearchStay } from "@/lib/search-query";
+import type { SearchSort } from "@/lib/search-query";
 import { useSearchStays } from "@/lib/search-stays";
 import type { SearchSource } from "@/lib/search-stays";
-
-const amenityIcons: Record<Amenity, LucideIcon> = {
-  "hot-tub": Bath,
-  pool: Waves,
-  fireplace: Flame,
-  "ocean-view": Mountain,
-  wifi: Wifi,
-  workspace: Laptop,
-  "forest-view": Trees,
-  "fire-pit": Flame,
-  kitchen: Utensils,
-  "lake-view": Waves,
-  bbq: Flame,
-  "beach-access": Waves,
-  "air-conditioning": Sparkles,
-  "skyline-view": Mountain,
-  "mountain-view": Mountain,
-  "ev-charger": Sparkles,
-};
+import { badges } from "@/lib/stay-badges";
 
 const SORTS: { value: SearchSort; label: string }[] = [
   { value: "best", label: "Best match" },
@@ -55,13 +27,6 @@ const SORTS: { value: SearchSort; label: string }[] = [
   { value: "rating_desc", label: "Rating: high to low" },
   { value: "rating_asc", label: "Rating: low to high" },
 ];
-
-// The two badges on a card: the first amenity, then Pet Friendly when it applies, then the next amenity.
-function badges(p: SearchStay) {
-  const list = p.amenities.map((a) => ({ label: AMENITY_LABELS[a], icon: amenityIcons[a] }));
-  if (p.petsAllowed) list.splice(1, 0, { label: "Pet Friendly", icon: PawPrint });
-  return list.slice(0, 2).map(({ label, icon }) => ({ label, icon: <Icon icon={icon} size="sm" /> }));
-}
 
 export default function Search() {
   const { q, from } = useLocalSearchParams<{ q?: string; from?: string }>();
@@ -73,7 +38,7 @@ export default function Search() {
 function SearchScreen({ query, initialSource }: { query: string; initialSource: SearchSource }) {
   const router = useRouter();
   const [text, setText] = useState(query);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const saved = useSavedStays();
   const parsed = useMemo(() => parseQuery(query), [query]);
   const [sort, setSort] = useState<SearchSort>("best");
   const [sortOpen, setSortOpen] = useState(false);
@@ -88,15 +53,6 @@ function SearchScreen({ query, initialSource }: { query: string; initialSource: 
     router.setParams({ q: next.trim(), from });
   };
   const submitSearch = (next: string, from: "results" | "suggestion") => run(next, from);
-  const toggleFavorite = (id: string) => {
-    const action = favorites.has(id) ? "removed" : "saved";
-    posthog?.capture("stay_favorite_toggled", { property_id: id, action });
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      if (!next.delete(id)) next.add(id);
-      return next;
-    });
-  };
 
   return (
     <ScrollView
@@ -106,6 +62,12 @@ function SearchScreen({ query, initialSource }: { query: string; initialSource: 
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
     >
+      {saved.error ? (
+        <View className="px-5">
+          <Alert tone="danger" message={saved.error} onDismiss={saved.dismissError} />
+        </View>
+      ) : null}
+
       <View className="px-5">
         <SearchField
           value={text}
@@ -216,8 +178,8 @@ function SearchScreen({ query, initialSource }: { query: string; initialSource: 
                         price={p.price}
                         imageUrl={p.imageUrl}
                         amenities={badges(p)}
-                        favorite={favorites.has(p.id)}
-                        onToggleFavorite={() => toggleFavorite(p.id)}
+                        favorite={saved.isSaved(p.id)}
+                        onToggleFavorite={() => saved.toggle(p.id)}
                         favoritePlacement="inline"
                       />
                     </ResultRow>
