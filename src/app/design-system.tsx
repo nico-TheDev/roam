@@ -434,7 +434,7 @@ export default function DesignSystem() {
           <AmenityHighlight icon={TreePine} label="Forest View" />
         </View>
         <HostRow name="Alex Rivera" isSuperhost />
-        <HostRow name="Maya Chen" hostingSince={2019} />
+        <HostRow name="Maya Chen" hostingSince={2019} onPress={() => {}} />
         <BookingBar price={289} totalLabel="$867 total · 3 nights" onBook={() => {}} />
       </Section>
       )}

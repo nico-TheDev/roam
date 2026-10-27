@@ -175,6 +175,7 @@ function StayContent({ stay, source, onBack }: { stay: StayDetails; source?: str
                 photoUrl={stay.host.photoUrl}
                 isSuperhost={stay.host.isSuperhost}
                 hostingSince={stay.host.hostingSince}
+                onPress={() => router.push({ pathname: "/stay/[id]/host", params: { id: stay.id } })}
               />
             </Animated.View>
           ) : null}

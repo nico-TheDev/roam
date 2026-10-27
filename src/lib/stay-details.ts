@@ -44,7 +44,14 @@ export type StayDetails = {
   petsAllowed: boolean;
   amenities: string[];
   imageUrls: string[];
-  host: { name: string; isSuperhost: boolean; hostingSince: number | null; photoUrl: string | null } | null;
+  host: {
+    id: string;
+    name: string;
+    bio: string | null;
+    isSuperhost: boolean;
+    hostingSince: number | null;
+    photoUrl: string | null;
+  } | null;
   cancellationPolicy: StayPolicy | null;
   policies: StayPolicy[];
 };
@@ -59,7 +66,7 @@ const QUERY = `*[_type == "property" && _id == $id][0]{
   "city": location.city, "state": location.state,
   nightlyPrice, cleaningFee, minNights, maxGuests, petsAllowed, amenities,
   "imageUrls": images[].asset->url,
-  "host": host->{ name, isSuperhost, hostingSince, "photoUrl": photo.asset->url },
+  "host": host->{ "id": _id, name, bio, isSuperhost, hostingSince, "photoUrl": photo.asset->url },
   "cancellationPolicy": cancellationPolicy->${POLICY},
   "policies": policies[]->${POLICY}
 }`;
