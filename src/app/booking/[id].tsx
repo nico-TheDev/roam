@@ -24,6 +24,13 @@ export default function BookingConfirmation() {
     });
   }, [status]);
 
+  const missed = useRef<string | null>(null);
+  useEffect(() => {
+    if (status.status === "pending" || status.status === "confirmed" || missed.current === status.status) return;
+    missed.current = status.status;
+    posthog?.capture("booking_not_confirmed", { outcome: status.status });
+  }, [status.status]);
+
   const done = () => router.replace("/trips");
 
   if (status.status === "pending") {

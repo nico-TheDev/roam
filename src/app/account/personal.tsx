@@ -1,9 +1,10 @@
 import { useUser } from "@clerk/expo";
 import { Mail, TriangleAlert, User } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { Alert, Avatar, Button, Icon, Text, TextField } from "@/components";
 import { useProfilePhoto, useUpdateName } from "@/lib/account";
+import { posthog } from "@/lib/posthog";
 import { validateName } from "@/lib/validation";
 
 // Opened from the Profile tab. Name and photo go to Clerk; the email is shown but changed elsewhere (out of scope).
@@ -16,6 +17,10 @@ export default function PersonalInfo() {
   const [touched, setTouched] = useState(false);
   const [busy, setBusy] = useState<"save" | "pick" | "remove" | null>(null);
   const [message, setMessage] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
+
+  useEffect(() => {
+    posthog?.capture("personal_info_opened");
+  }, []);
 
   const error = touched ? validateName(name) : undefined;
   const dirty = name.trim() !== saved;
@@ -30,7 +35,10 @@ export default function PersonalInfo() {
 
   const onSave = () => {
     setTouched(true);
-    if (validateName(name)) return;
+    if (validateName(name)) {
+      posthog?.capture("profile_update_blocked", { field: "name" });
+      return;
+    }
     run("save", () => updateName(name), "Saved.");
   };
 

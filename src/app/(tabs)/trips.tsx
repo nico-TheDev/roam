@@ -54,7 +54,11 @@ export default function Trips() {
     <ScrollView className="flex-1 bg-surface" contentContainerClassName="gap-4 px-5 pb-8 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Text variant="heading">Your trips</Text>
       {state.data.map((booking) => (
-        <BookingCard key={booking.id} booking={booking} onPress={() => router.push({ pathname: "/stay/[id]", params: { id: booking.stayId } })} />
+        <BookingCard key={booking.id} booking={booking} onPress={() => {
+            posthog?.capture("trip_opened", { stay_id: booking.stayId });
+            router.push({ pathname: "/stay/[id]", params: { id: booking.stayId } });
+          }}
+        />
       ))}
     </ScrollView>
   );

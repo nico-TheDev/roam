@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, Eye, TriangleAlert } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Alert, Badge, Button, HostBookingRow, Icon, IconButton, SectionFields, Surface, Text, Toggle } from "@/components";
@@ -11,6 +11,7 @@ import {
 import { AMENITY_OPTIONS, CATEGORY_OPTIONS, formatTime, type StayErrors, stayErrors } from "@/lib/host-stay-rules";
 import { type Draft, draftFromDetail, inputFromDraft, SECTIONS, type SectionKey } from "@/lib/stay-draft";
 import { nightsBetween } from "@/lib/calendar";
+import { posthog } from "@/lib/posthog";
 import { usePhotoPicker } from "@/lib/use-photo-picker";
 
 // Opened from a card on the host overview. Status, upcoming bookings and every detail of one stay. A detail opens
@@ -39,7 +40,11 @@ export default function StayManager() {
         <Text variant="heading" className="flex-1" numberOfLines={1}>
           {state.status === "ready" ? (state.stay.title ?? "Your stay") : "Your stay"}
         </Text>
-        <IconButton label="View as a guest" variant="outline" onPress={() => router.push({ pathname: "/stay/[id]", params: { id } })}>
+        <IconButton label="View as a guest" variant="outline" onPress={() => {
+            posthog?.capture("host_stay_viewed_as_guest", { stay_id: id });
+            router.push({ pathname: "/stay/[id]", params: { id } });
+          }}
+        >
           <Icon icon={Eye} size="lg" />
         </IconButton>
       </View>
@@ -77,6 +82,12 @@ function Manager({ stay }: { stay: StayDetail }) {
   const [error, setError] = useState<string | null>(null);
   const [flagged, setFlagged] = useState<string[]>([]);
 
+  useEffect(() => {
+    posthog?.capture("host_stay_manager_opened", { stay_id: stay.id, listed: stay.listed });
+    // Once per visit, not whenever the stay refreshes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stay.id]);
+
   const attention = new Set<string>([...needsAttention(stay), ...flagged]);
   const mine = bookings.status === "ready" ? bookings.bookings.filter((b) => b.stayId === stay.id) : [];
 
@@ -91,6 +102,7 @@ function Manager({ stay }: { stay: StayDetail }) {
   };
 
   const open = (section: SectionKey) => {
+    posthog?.capture("host_stay_section_opened", { stay_id: stay.id, section });
     setDraft(draftFromDetail(stay));
     picker.reset((stay.photoIds ?? []).map((assetId, i): GridPhoto => ({ key: assetId, uri: stay.photoUrls[i] ?? "", status: "done", assetId })));
     setSubmitted(false);
@@ -108,10 +120,12 @@ function Manager({ stay }: { stay: StayDetail }) {
     setSubmitted(true);
     setError(null);
     if (fieldsOf.some((f) => f in allErrors)) {
+      posthog?.capture("host_stay_save_blocked", { stay_id: stay.id, section: editing, reason: "invalid" });
       setError("Check the highlighted fields.");
       return;
     }
     if (picker.failed) {
+      posthog?.capture("host_stay_save_blocked", { stay_id: stay.id, section: editing, reason: "photos_failed" });
       setError("Retry or remove the photos that didn't upload.");
       return;
     }
@@ -193,7 +207,12 @@ function Manager({ stay }: { stay: StayDetail }) {
                     />
                     {error ? <Alert tone="danger" message={error} icon={<Icon icon={TriangleAlert} className="text-danger" />} /> : null}
                     <View className="flex-row gap-3">
-                      <Button title="Cancel" variant="secondary" disabled={busy} onPress={() => setEditing(null)} className="flex-1" />
+                      <Button title="Cancel" variant="secondary" disabled={busy} onPress={() => {
+                          posthog?.capture("host_stay_section_cancelled", { stay_id: stay.id, section: key });
+                          setEditing(null);
+                        }}
+                        className="flex-1"
+                      />
                       <Button
                         title={busy ? (REWRITES.includes(key) ? "Writing your listing…" : "Saving…") : picker.uploading ? "Uploading…" : "Save"}
                         loading={busy}

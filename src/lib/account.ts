@@ -21,6 +21,7 @@ export function useUpdateName() {
         posthog?.capture("profile_updated", { field: "name" });
         return ok;
       } catch (e) {
+        posthog?.capture("profile_update_failed", { field: "name" });
         return fail(describe(e as ClerkError));
       }
     },
@@ -51,6 +52,7 @@ export function useProfilePhoto() {
       posthog?.capture("profile_updated", { field: "photo" });
       return ok;
     } catch (e) {
+      posthog?.capture("profile_update_failed", { field: "photo" });
       return fail(describe(e as ClerkError));
     }
   }, [user]);
@@ -62,6 +64,7 @@ export function useProfilePhoto() {
       posthog?.capture("profile_photo_removed");
       return ok;
     } catch (e) {
+      posthog?.capture("profile_update_failed", { field: "photo_remove" });
       return fail(describe(e as ClerkError));
     }
   }, [user]);
@@ -134,6 +137,7 @@ export function useDevices() {
       reload();
       return ok;
     } catch (e) {
+      posthog?.capture("devices_sign_out_failed");
       return fail(describe(e as ClerkError));
     }
   }, [user, session, reload]);
@@ -152,7 +156,10 @@ export function useDeleteAccount() {
   const { session } = useSession();
   const [pending, setPending] = useState<Reverification | null>(null);
   const runDelete = useReverification(() => user!.delete(), {
-    onNeedsReverification: (params: Reverification) => setPending(params),
+    onNeedsReverification: (params: Reverification) => {
+      posthog?.capture("account_delete_reverification_requested", { has_password: !!user?.passwordEnabled });
+      setPending(params);
+    },
   });
 
   const available = !!user?.deleteSelfEnabled;

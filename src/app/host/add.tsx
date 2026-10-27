@@ -1,6 +1,6 @@
 import { usePreventRemove, useRouter } from "expo-router";
 import { ChevronLeft, Plus, TriangleAlert } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert as NativeAlert, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -9,6 +9,7 @@ import {
 } from "@/components";
 import { useCancellationPolicies, useHostActions } from "@/lib/host";
 import { type StayErrors, stayErrors } from "@/lib/host-stay-rules";
+import { posthog } from "@/lib/posthog";
 import { type Draft, emptyDraft, inputFromDraft } from "@/lib/stay-draft";
 import { usePhotoPicker } from "@/lib/use-photo-picker";
 
@@ -32,14 +33,21 @@ export default function AddStay() {
   const input = inputFromDraft(draft, picker.ids);
   const errors: StayErrors = submitted ? stayErrors(input) : {};
 
+  useEffect(() => {
+    posthog?.capture("host_add_stay_opened");
+  }, []);
+
   const onPublish = async () => {
     setSubmitted(true);
     setError(null);
-    if (Object.keys(stayErrors(input)).length) {
+    const invalid = Object.keys(stayErrors(input));
+    if (invalid.length) {
+      posthog?.capture("host_stay_publish_blocked", { reason: "invalid", fields: invalid });
       setError("Check the highlighted fields.");
       return;
     }
     if (picker.failed) {
+      posthog?.capture("host_stay_publish_blocked", { reason: "photos_failed" });
       setError("Retry or remove the photos that didn't upload.");
       return;
     }
@@ -60,7 +68,14 @@ export default function AddStay() {
   usePreventRemove(dirty && !published, ({ repeat }) => {
     NativeAlert.alert("Discard this stay?", "What you've entered and your photos will be lost.", [
       { text: "Keep editing", style: "cancel" },
-      { text: "Discard", style: "destructive", onPress: () => repeat() },
+      {
+        text: "Discard",
+        style: "destructive",
+        onPress: () => {
+          posthog?.capture("host_add_stay_discarded", { photo_count: picker.photos.length });
+          repeat();
+        },
+      },
     ]);
   });
 

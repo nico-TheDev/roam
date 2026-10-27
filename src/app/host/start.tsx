@@ -1,9 +1,10 @@
 import { useRouter } from "expo-router";
 import { House, TriangleAlert } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { Alert, Button, Icon, Text } from "@/components";
 import { useHostActions } from "@/lib/host";
+import { posthog } from "@/lib/posthog";
 
 // Opened from "Become a host" on Profile. One tap creates the public host profile; sign-in and guest features don't change.
 export default function StartHosting() {
@@ -11,6 +12,10 @@ export default function StartHosting() {
   const { becomeHost } = useHostActions();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    posthog?.capture("host_intro_viewed");
+  }, []);
 
   const onStart = async () => {
     setBusy(true);

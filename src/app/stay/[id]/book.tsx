@@ -2,7 +2,7 @@ import { useUser } from "@clerk/expo";
 import { PaymentSheetError, useStripe } from "@/lib/stripe-native";
 import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { Alert, Button, DateRangeCalendar, PriceBreakdown, Stepper, Text } from "@/components";
 import { BookingError, formatStayDates, formatUsd, messageFor, useAvailability, useBookingApi, useQuote } from "@/lib/bookings";
@@ -34,6 +34,20 @@ export default function BookStay() {
 
   const availability = useAvailability(id);
   const quote = useQuote(id, dates.checkIn, dates.checkOut, guests, refresh);
+
+  const quoted = useRef(false);
+  const failedReason = quote.status === "error" ? quote.reason : null;
+  useEffect(() => {
+    // The first quote of the visit only; later date changes send nothing.
+    if (quote.status === "ready" && !quoted.current) {
+      quoted.current = true;
+      posthog?.capture("booking_quote_viewed", { stay_id: id, nights: quote.quote.nights, guests, total_cents: quote.quote.totalCents });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quote.status]);
+  useEffect(() => {
+    if (failedReason) posthog?.capture("booking_quote_failed", { stay_id: id, reason: failedReason });
+  }, [failedReason, id]);
 
   if (!stay) {
     return (
@@ -81,12 +95,12 @@ export default function BookStay() {
         const result = await presentPaymentSheet();
         if (result.error) {
           const canceled = result.error.code === PaymentSheetError.Canceled;
-          posthog?.capture("booking_payment_result", { outcome: canceled ? "canceled" : "failed", ...(canceled ? {} : { reason: result.error.code }) });
+          posthog?.capture("booking_payment_result", { stay_id: stay.id, outcome: canceled ? "canceled" : "failed", ...(canceled ? {} : { reason: result.error.code }) });
           if (!canceled) setError(result.error.message);
           setPhase("edit");
           return;
         }
-        posthog?.capture("booking_payment_result", { outcome: "paid" });
+        posthog?.capture("booking_payment_result", { stay_id: stay.id, outcome: "paid" });
       }
       // Paid, or already paid: the confirmation screen waits for the server to book it.
       router.dismiss();
@@ -95,6 +109,7 @@ export default function BookStay() {
       const reason = e instanceof BookingError ? e.reason : "server";
       setPhase("edit");
       setError(messageFor(reason));
+      if (reason !== "unavailable") posthog?.capture("booking_checkout_failed", { stay_id: stay.id, reason });
       if (reason === "unavailable") {
         posthog?.capture("booking_unavailable", { stay_id: stay.id, reason });
         setDates({ checkIn: null, checkOut: null });

@@ -156,6 +156,7 @@ export function useHostActions() {
       invalidate();
       return { ok: true };
     } catch (e) {
+      posthog?.capture("host_start_failed", { reason: (e as HostError).reason ?? "server" });
       return { ok: false, error: hostMessage((e as HostError).reason) };
     }
   }, [getToken]);
@@ -171,8 +172,8 @@ export function useHostActions() {
         staySaved(stayId);
         return { ok: true, regenerated: out.regenerated };
       } catch (e) {
-        posthog?.capture("host_stay_edited", { stay_id: stayId, fields, regenerated: false, outcome: "failed" });
         const err = e as HostError;
+        posthog?.capture("host_stay_edited", { stay_id: stayId, fields, regenerated: false, outcome: "failed", reason: err.reason ?? "server" });
         return { ok: false, error: hostMessage(err.reason), fields: err.fields };
       }
     },
@@ -193,6 +194,7 @@ export function useHostActions() {
       } catch (e) {
         listedOverrides.delete(stayId);
         repaint();
+        posthog?.capture("host_stay_listed_toggle_failed", { stay_id: stayId, listed, reason: (e as HostError).reason ?? "server" });
         return { ok: false, error: hostMessage((e as HostError).reason) };
       }
     },
@@ -207,7 +209,9 @@ export function useHostActions() {
         const { assetId } = await call<{ assetId: string }>("/api/host/photos", await getToken(), { method: "POST", raw: { blob, type: mimeType } });
         return { ok: true, assetId };
       } catch (e) {
-        return { ok: false, error: hostMessage(e instanceof HostError ? e.reason : "network") };
+        const reason = e instanceof HostError ? e.reason : "network";
+        posthog?.capture("host_photo_upload_failed", { reason });
+        return { ok: false, error: hostMessage(reason) };
       }
     },
     [getToken],

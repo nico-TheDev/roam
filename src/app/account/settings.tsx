@@ -1,6 +1,6 @@
 import { Alert as NativeAlert, ScrollView, View } from "react-native";
 import { LogOut, Lock, Trash2, TriangleAlert } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Button, DeviceRow, Icon, Text, TextField } from "@/components";
 import { lastActiveLabel, useDeleteAccount, useDevices } from "@/lib/account";
 import { useSignOut } from "@/lib/auth";
@@ -10,6 +10,10 @@ const CONFIRM_WORD = "DELETE";
 
 // Opened from the gear on the Profile tab. Sign out and delete never navigate: the route guards react to the session.
 export default function AccountSettings() {
+  useEffect(() => {
+    posthog?.capture("account_settings_opened");
+  }, []);
+
   return (
     <ScrollView
       className="flex-1 bg-surface"
@@ -91,7 +95,10 @@ function SignOut() {
           const result = await signOut();
           // On success the route guards move to onboarding and this sheet unmounts.
           if (result.ok) posthog?.capture("user_signed_out");
-          else setLoading(false);
+          else {
+            posthog?.capture("user_sign_out_failed");
+            setLoading(false);
+          }
         },
       },
     ]);
@@ -137,7 +144,11 @@ function DeleteAccount() {
 
   if (!open) {
     return (
-      <Button title="Delete account" variant="danger" icon={<Icon icon={Trash2} className="text-danger" />} onPress={() => setOpen(true)} />
+      <Button title="Delete account" variant="danger" icon={<Icon icon={Trash2} className="text-danger" />} onPress={() => {
+          posthog?.capture("account_delete_started");
+          setOpen(true);
+        }}
+      />
     );
   }
 
@@ -195,7 +206,11 @@ function DeleteAccount() {
             disabled={typed !== CONFIRM_WORD}
             onPress={onDelete}
           />
-          <Button title="Cancel" variant="secondary" size="sm" disabled={loading} onPress={() => setOpen(false)} />
+          <Button title="Cancel" variant="secondary" size="sm" disabled={loading} onPress={() => {
+              posthog?.capture("account_delete_cancelled");
+              setOpen(false);
+            }}
+          />
         </View>
       )}
     </View>

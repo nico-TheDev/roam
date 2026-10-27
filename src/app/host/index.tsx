@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { ChevronLeft, House, Plus } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,6 +9,7 @@ import { bookingPhase } from "@/lib/booking-rules";
 import { formatStayDates } from "@/lib/bookings";
 import { hostMessage, refreshHost, useHost, useHostActions, useHostBookings } from "@/lib/host";
 import { useEntering } from "@/lib/motion";
+import { posthog } from "@/lib/posthog";
 
 // Opened from the Hosting row on Profile. The stays this user hosts with their status and next booking; a card opens
 // the stay manager and the switch pauses or resumes a stay.
@@ -20,6 +21,18 @@ export default function HostDashboard() {
   const { setListed } = useHostActions();
   const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const reported = useRef(false);
+  useEffect(() => {
+    if (host.status !== "ready" || reported.current) return;
+    reported.current = true;
+    posthog?.capture("host_dashboard_opened", { stay_count: host.stays.length, listed_count: host.stays.filter((s) => s.listed).length });
+  }, [host]);
+
+  const addStay = (source: "header" | "empty") => {
+    posthog?.capture("host_add_stay_tapped", { source });
+    router.push("/host/add");
+  };
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace("/profile"));
   const onRefresh = () => {
@@ -51,7 +64,7 @@ export default function HostDashboard() {
         <Text variant="heading" className="flex-1">
           Hosting
         </Text>
-        <IconButton label="Add a stay" onPress={() => router.push("/host/add")}>
+        <IconButton label="Add a stay" onPress={() => addStay("header")}>
           <Icon icon={Plus} size="lg" />
         </IconButton>
       </View>
@@ -68,7 +81,7 @@ export default function HostDashboard() {
           <Button title="Try again" variant="secondary" onPress={host.retry} />
         </View>
       ) : host.stays.length === 0 ? (
-        <Empty onAdd={() => router.push("/host/add")} />
+        <Empty onAdd={() => addStay("empty")} />
       ) : (
         <>
           <StatsRow
