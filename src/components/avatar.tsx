@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { cn } from "./cn";
 import { Text } from "./text";
 
-const sizes = { md: "size-16", sm: "size-11" } as const;
+const sizes = { lg: "size-18", md: "size-16", sm: "size-11" } as const;
 
 /** Round photo on a yellow disc, with initials when there is no photo. */
 export function Avatar({

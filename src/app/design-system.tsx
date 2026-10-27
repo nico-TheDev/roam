@@ -27,6 +27,9 @@ import {
   Briefcase,
   Waves,
   X,
+  Bath,
+  Wifi,
+  TreePine,
   FileText,
 } from "lucide-react-native";
 import { useState } from "react";
@@ -34,24 +37,32 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { ScrollView, View } from "react-native";
 import {
   Alert,
+  AmenityHighlight,
+  AnswerCard,
   Avatar,
   Badge,
+  BookingBar,
   Button,
+  ChatBubble,
+  ChatInput,
   Chip,
   CodeInput,
   Divider,
   FeaturedCard,
+  HostRow,
   Icon,
   IconButton,
   ListingCard,
   PolicyCard,
   ProfileList,
   ProfileRow,
+  RatingBox,
   SearchField,
   SearchPill,
   SegmentedControl,
   Section,
   SocialButtons,
+  StayGallery,
   Stepper,
   TabBar,
   Text,
@@ -84,7 +95,9 @@ const typeRamp = [
     spec: "Regular · 16 / 24",
     sample: "From mountain cabins to oceanfront villas, roam helps you find unforgettable stays.",
   },
+  { variant: "title-sm", name: "Title small", spec: "Bold · 16 / 20", sample: "Modern Cabin with Hot Tub" },
   { variant: "caption", name: "Caption", spec: "Medium · 14 / 20", sample: "Lake Arrowhead, CA" },
+  { variant: "micro", name: "Micro", spec: "Regular · 12 / 16", sample: "Lake Arrowhead, CA" },
   { variant: "button", name: "Button", spec: "Medium · 17 / 22", sample: "Book this stay" },
 ] as const;
 
@@ -361,6 +374,7 @@ export default function DesignSystem() {
           <Badge tone="success" label="New" />
           <Badge tone="danger" label="20% off" />
           <Badge tone="info" label="Superhost" />
+          <Badge tone="neutral" size="xs" label="Hot Tub" icon={<Icon icon={Waves} size="sm" />} />
         </View>
       </Section>
       )}
@@ -373,7 +387,7 @@ export default function DesignSystem() {
           onSubmit={() => {}}
           placeholder="quiet pet friendly cabin with hot tub"
         />
-        <SearchField value={query} onChangeText={setQuery} onSubmit={() => {}} onBack={() => {}} />
+        <SearchField value={query} onChangeText={setQuery} onSubmit={() => {}} onBack={() => {}} trailing={<Icon icon={SlidersHorizontal} size="lg" />} />
       </Section>
       )}
 
@@ -394,6 +408,45 @@ export default function DesignSystem() {
           <Avatar name="Joanna Reyes" />
           <Avatar name="Joanna Reyes" size="sm" />
         </View>
+      </Section>
+      )}
+      {show("19") && (
+      <Section number="19" title="Stay details">
+        <View className="overflow-hidden rounded-lg">
+          <StayGallery
+            label="Modern Cabin with Hot Tub"
+            imageUrls={[
+              "https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?auto=format&fit=crop&w=1000&q=80",
+              "https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1000&q=80",
+            ]}
+          />
+        </View>
+        <View className="flex-row items-start gap-4">
+          <Text variant="heading" className="flex-1">
+            Modern Cabin with Hot Tub
+          </Text>
+          <RatingBox rating={4.9} reviews={342} />
+        </View>
+        <View className="flex-row gap-2">
+          <AmenityHighlight icon={Bath} label="Hot Tub" />
+          <AmenityHighlight icon={PawPrint} label="Pet Friendly" />
+          <AmenityHighlight icon={Wifi} label="Wi-Fi" />
+          <AmenityHighlight icon={TreePine} label="Forest View" />
+        </View>
+        <HostRow name="Alex Rivera" isSuperhost />
+        <HostRow name="Maya Chen" hostingSince={2019} />
+        <BookingBar price={289} totalLabel="$867 total · 3 nights" onBook={() => {}} />
+      </Section>
+      )}
+      {show("20") && (
+      <Section number="20" title="Ask chat">
+        <ChatBubble text="Can I bring my dog?" />
+        <AnswerCard
+          title="Pets"
+          text="Pets are welcome. Please keep them off the furniture and clean up outdoors."
+          source="Pet policy · Roam policy"
+        />
+        <ChatInput onSend={() => {}} />
       </Section>
       )}
     </ScrollView>
