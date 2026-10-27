@@ -22,6 +22,13 @@ export const host = defineType({
     defineField({name: 'isSuperhost', type: 'boolean', initialValue: false}),
     defineField({name: 'hostingSince', type: 'number', description: 'Year, e.g. 2019.', validation: (rule) => rule.integer().min(2008)}),
     defineField({name: 'bio', type: 'text', rows: 3}),
+    defineField({
+      name: 'ownerKey',
+      type: 'string',
+      readOnly: true,
+      description:
+        'Keyed hash of the Clerk user who owns this host. Set by the app when a guest becomes a host; seeded hosts have none.',
+    }),
   ],
   preview: {select: {title: 'name', media: 'photo', superhost: 'isSuperhost'}, prepare: ({title, media, superhost}) => ({title, media, subtitle: superhost ? 'Superhost' : 'Host'})},
 })
