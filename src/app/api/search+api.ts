@@ -1,5 +1,7 @@
+import { spendBudget } from "@/lib/daily-budget";
 import { guard } from "@/lib/rate-limit";
 import { buildSearchQuery } from "@/lib/search-query";
+import { fallbackIntent } from "@/lib/search-intent";
 import { queryContext, readSentence } from "@/lib/search-server";
 
 const MAX_QUERY_LENGTH = 200;
@@ -20,8 +22,12 @@ export async function POST(request: Request) {
   const contextToken = process.env.SANITY_API_CONTEXT_TOKEN;
   if (!endpoint || !contextToken) return json({ error: "Search is not configured" }, 500);
 
-  const intent = await readSentence(query);
-  const { query: groq, semantic } = buildSearchQuery(intent);
+  // Past the daily budget the regex reading and hard filters still work; only the paid calls are skipped.
+  const intent = (await spendBudget("model_search")) ? await readSentence(query) : fallbackIntent(query);
+  const rankByVibe = await spendBudget("semantic_search", intent.vibes.wanted.length > 0);
+  const { query: groq, semantic } = buildSearchQuery(
+    rankByVibe ? intent : { ...intent, vibes: { ...intent.vibes, wanted: [] } },
+  );
 
   const result = await queryContext(endpoint, contextToken, groq).catch(() => undefined);
   if (!result) return json({ error: "Search failed" }, 502);

@@ -1,3 +1,4 @@
+import { spendBudget } from "@/lib/daily-budget";
 import { guard } from "@/lib/rate-limit";
 import { loadPolicies, pickPolicies } from "@/lib/ask-server";
 
@@ -16,6 +17,8 @@ export async function POST(request: Request) {
   if (!process.env.SANITY_CONTEXT_KB_URL || !process.env.SANITY_API_CONTEXT_TOKEN || !process.env.DEEPSEEK_API_KEY) {
     return json({ error: "Policies are not configured" }, 500);
   }
+
+  if (!(await spendBudget("model_ask"))) return json({ error: "demo_busy" }, 503);
 
   try {
     const policies = await loadPolicies();

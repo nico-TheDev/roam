@@ -6,7 +6,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnswerCard, ChatBubble, ChatInput, Chip, Icon, IconButton, Text } from "@/components";
-import { AskError, askPolicies, greeting, noMatch, topics } from "@/lib/ask-policies";
+import { AskError, askPolicies, busyMessage, greeting, noMatch, topics } from "@/lib/ask-policies";
 import type { Answer } from "@/lib/ask-policies";
 import { useEntering } from "@/lib/motion";
 import { posthog } from "@/lib/posthog";
@@ -14,7 +14,7 @@ import { getCachedStay } from "@/lib/stay-details";
 
 type ScrollViewInstance = ComponentProps<typeof ScrollView> extends { ref?: Ref<infer T> } ? T : never;
 
-type Turn = { id: number; guest: string; source: "chip" | "typed"; status: "pending" | "ready" | "error"; answers: Answer[] };
+type Turn = { id: number; guest: string; source: "chip" | "typed"; status: "pending" | "ready" | "error"; busy?: boolean; answers: Answer[] };
 
 // Replies come from Roam's policies through /api/ask: DeepSeek picks the entries, the cards show them word for word.
 export default function AskAboutStay() {
@@ -48,7 +48,7 @@ export default function AskAboutStay() {
       });
     } catch (e) {
       if (requests.current.signal.aborted) return;
-      update(turn.id, { status: "error" });
+      update(turn.id, { status: "error", busy: e instanceof AskError && e.reason === "busy" });
       posthog?.capture("stay_policy_question_asked", {
         source: turn.source,
         outcome: "failed",
@@ -135,7 +135,7 @@ function TurnView({ turn, onRetry }: { turn: Turn; onRetry: () => void }) {
         {turn.status === "pending" ? <Text variant="small">Checking the policies…</Text> : null}
         {turn.status === "error" ? (
           <View className="items-start gap-2">
-            <Text variant="body">Couldn&apos;t check the policies. Try again.</Text>
+            <Text variant="body">{turn.busy ? busyMessage : "Couldn\u2019t check the policies. Try again."}</Text>
             <Chip label="Try again" onPress={onRetry} />
           </View>
         ) : null}

@@ -74,3 +74,14 @@ export const rateLimits = pgTable(
   },
   (t) => [primaryKey({ columns: [t.key, t.windowStart] }), index("rate_limits_window_idx").on(t.windowStart)],
 );
+
+/** Global per-day counters for paid model and semantic calls (`src/lib/daily-budget.ts`). One row per UTC day and kind. */
+export const dailyBudget = pgTable(
+  "daily_budget",
+  {
+    day: date("day").notNull(),
+    kind: text("kind").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.kind] })],
+);
