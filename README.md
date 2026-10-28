@@ -16,7 +16,8 @@ Built with Expo (React Native), Expo Router, NativeWind, Clerk, Sanity, Neon Pos
 
 Roam is a demo. Payments run in Stripe test mode, so no real money moves, and the stays and photos are samples.
 
-- **Android:** download the APK from the [latest release](https://github.com/nico-TheDev/roam/releases/latest) and install it (allow installs from your browser). It talks to the hosted API.
+- **Landing page:** [roam.norbertoignaciojr.dev](https://roam.norbertoignaciojr.dev).
+- **Android:** no APK is published yet. Build one with the `production-apk` command below, or run the app from source.
 - **iOS:** there is no iOS build to share yet (it needs an Apple Developer account). The screenshots below show the iOS app.
 - **Sign in** with the demo account, or create your own with an email:
 

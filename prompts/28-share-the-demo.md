@@ -1,6 +1,6 @@
 # 28 · Share the demo
 
-Status: approved
+Status: done
 
 ## Goal
 A reviewer can try Roam without help: open the landing page, download a sideloadable Android APK, sign in with a published demo account, and read a README that shows the app, how it is built and why. A public demo can't run up a DeepSeek or Sanity semantic-search bill.
@@ -46,7 +46,8 @@ Write `README.md` per the Decisions. Use relative paths to `docs/screenshots/*.p
 - Step 1 done (migration `0003_daily_budget` applied; not yet deployed to production).
 - Step 2 done: dev-instance user `demo+clerk_test@example.com`, credentials in `src/lib/demo.ts`; sign-in plus code 424242 verified against Clerk's API.
 - Step 6 done as a draft: README written; the APK link points at `releases/latest` and the landing URL is not in it yet.
-- Steps 3, 4, 5 wait on the user (Vercel import, EAS build and release approval).
+- Step 3 done: landing is live at https://roam.norbertoignaciojr.dev (HTTP 200, title checked); `site` set in `landing/astro.config.mjs`, README links it. Theme toggle and typing demo not re-checked in a browser.
+- Steps 4 and 5 skipped by the user (2026-10-28): the queued EAS build was cancelled, no GitHub Release, no landing download link. The README says no APK is published yet.
 
 ## Verification
 - `npx tsc --noEmit` (app files) and `npx expo lint` pass.
@@ -62,3 +63,6 @@ Write `README.md` per the Decisions. Use relative paths to `docs/screenshots/*.p
 - Rate limiting: add the global `daily_budget` (kinds, fallback behavior, `demo_busy`, env overrides).
 - Auth: record the demo account (Clerk test email, code 424242) and where its credentials live (`src/lib/demo.ts`).
 - Add `README.md` as the public overview; AGENTS.md stays the source of decisions.
+
+## Result
+Daily budget, demo account, landing page (Vercel) and README are done. Not done: APK build and GitHub Release, landing download link, `eas deploy` of the daily budget, an in-app check of the budget fallback and busy message. To finish later: build with `production-apk`, publish a release, add the landing link, and restore the README Android line.
