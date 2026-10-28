@@ -1,7 +1,7 @@
-import { useAuth } from "@clerk/expo";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type StayField, type StayInput, stayErrors } from "@/lib/host-stay-rules";
 import { posthog } from "@/lib/posthog";
+import { useGetToken } from "@/lib/use-get-token";
 
 // The app's side of the host API (src/app/api/host). Ownership and every limit are decided by the server;
 // the checks here only give quicker feedback. Hosting is a feature of a normal account: nothing here changes sign-in.
@@ -99,7 +99,7 @@ export type HostState =
 
 /** Whether the signed-in user hosts, and the stays they own. A reload keeps showing the last good data. */
 export function useHost(): HostState {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
   const [version, setVersion] = useState(0);
   const [, setPaint] = useState(0);
   const [result, setResult] = useState<{ data?: HostData; error?: string }>({});
@@ -147,7 +147,7 @@ export function useHost(): HostState {
 export type HostResult = { ok: true } | { ok: false; error: string };
 
 export function useHostActions() {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
 
   const becomeHost = useCallback(async (): Promise<HostResult> => {
     try {
@@ -242,7 +242,7 @@ export type CancellationPolicy = { id: string; title: string; summary: string | 
 
 /** The shared cancellation policies a new stay can use. Loaded once per screen. */
 export function useCancellationPolicies() {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
   const [version, setVersion] = useState(0);
   const [state, setState] = useState<{ policies?: CancellationPolicy[]; error?: string }>({});
 
@@ -315,7 +315,7 @@ export type HostStayState =
   | { status: "ready"; stay: StayDetail };
 
 export function useHostStay(id: string): HostStayState {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
   const [version, setVersion] = useState(0);
   const [result, setResult] = useState<{ id: string; stay?: StayDetail; error?: string }>({ id: "" });
 
@@ -364,7 +364,7 @@ const BOOKINGS_TIMEOUT_MS = 15_000;
 
 /** Current and upcoming confirmed bookings across the user's stays: dates, guests and what was paid, nothing about the guest. */
 export function useHostBookings(): HostBookingsState {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
   // Held in a ref: if the function's identity changes between renders, an effect that depends on it would restart
   // the request on every render and never finish.
   const getTokenRef = useRef(getToken);

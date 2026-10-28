@@ -1,8 +1,8 @@
-import { useAuth } from "@clerk/expo";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Breakdown } from "@/lib/booking-rules";
 import type { Range } from "@/lib/calendar";
+import { useGetToken } from "@/lib/use-get-token";
 
 // The app's side of the booking API (src/app/api/bookings). Prices, availability and the booking itself
 // are decided by the server; nothing here creates a booking.
@@ -66,7 +66,7 @@ async function call<T>(path: string, token: string | null, init?: { method?: str
 }
 
 export function useBookingApi() {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
   return {
     checkout: async (body: BookingRequest) => call<Checkout>("/api/bookings/checkout", await getToken(), { method: "POST", body }),
   };
@@ -76,7 +76,7 @@ type Loadable<T> = { status: "loading" } | { status: "error"; reason: string } |
 
 /** Date ranges that can't be booked, for the calendar. Reloads on demand (after an "unavailable" answer). */
 export function useAvailability(stayId: string) {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
   const [attempt, setAttempt] = useState(0);
   const [outcome, setOutcome] = useState<{ key: string; state: Loadable<Range[]> }>({ key: "", state: { status: "loading" } });
   const key = `${stayId}:${attempt}`;
@@ -103,7 +103,7 @@ export type QuoteState = { status: "idle" } | { status: "loading" } | { status: 
 
 /** The server's price for the chosen dates, refreshed when dates or guests change. */
 export function useQuote(stayId: string, checkIn: string | null, checkOut: string | null, guests: number, refresh = 0): QuoteState {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
   // Clerk can hand back a new getToken on re-render; keep it out of the deps so a re-render never aborts the request.
   const getTokenRef = useRef(getToken);
   useEffect(() => {
@@ -146,7 +146,7 @@ export type BookingStatus =
 
 /** Polls until the server says the booking exists. The server asks Stripe; this never creates anything. */
 export function useBookingStatus(holdId: string, attempt = 0): BookingStatus {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
   const key = `${holdId}:${attempt}`;
   const [outcome, setOutcome] = useState<{ key: string; state: BookingStatus }>({ key: "", state: { status: "pending" } });
   useEffect(() => {
@@ -184,7 +184,7 @@ export function useBookingStatus(holdId: string, attempt = 0): BookingStatus {
 
 /** The guest's confirmed bookings, soonest first, for the Trips tab. */
 export function useBookings() {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
   const [attempt, setAttempt] = useState(0);
   const [outcome, setOutcome] = useState<{ key: number; state: Loadable<Booking[]> }>({ key: -1, state: { status: "loading" } });
   useEffect(() => {
