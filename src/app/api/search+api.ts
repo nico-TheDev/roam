@@ -1,4 +1,4 @@
-import { getUserId } from "@/lib/api-auth";
+import { guard } from "@/lib/rate-limit";
 import { buildSearchQuery } from "@/lib/search-query";
 import { queryContext, readSentence } from "@/lib/search-server";
 
@@ -7,7 +7,8 @@ const MAX_QUERY_LENGTH = 200;
 const json = (body: unknown, status = 200) => Response.json(body, { status });
 
 export async function POST(request: Request) {
-  if (!(await getUserId(request))) return json({ error: "Unauthorized" }, 401);
+  const auth = await guard(request, "search");
+  if ("response" in auth) return auth.response;
 
   const body = (await request.json().catch(() => null)) as { query?: unknown } | null;
   const query = typeof body?.query === "string" ? body.query.trim() : "";

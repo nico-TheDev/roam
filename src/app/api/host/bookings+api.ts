@@ -1,5 +1,5 @@
 import { and, asc, eq, gte, inArray } from "drizzle-orm";
-import { getUserId } from "@/lib/api-auth";
+import { guard } from "@/lib/rate-limit";
 import { toDay } from "@/lib/booking-rules";
 import { bookings, getDb } from "@/lib/db";
 import { json, ownerKeyFor, sanityQuery, serverError } from "@/lib/host-server";
@@ -7,8 +7,9 @@ import { json, ownerKeyFor, sanityQuery, serverError } from "@/lib/host-server";
 // Upcoming confirmed bookings on the stays this user hosts. Stay ids come from Sanity through the owner key; the
 // response carries dates, guests and what the guest paid, never anything about the guest.
 export async function GET(request: Request) {
-  const userId = await getUserId(request);
-  if (!userId) return json({ error: "Unauthorized" }, 401);
+  const auth = await guard(request, "hostRead");
+  if ("response" in auth) return auth.response;
+  const { userId } = auth;
 
   try {
     const ownerKey = await ownerKeyFor(userId);

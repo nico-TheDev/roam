@@ -1,11 +1,11 @@
-import { getUserId } from "@/lib/api-auth";
+import { guard } from "@/lib/rate-limit";
 import { json, sanityQuery, serverError } from "@/lib/host-server";
 
 // The shared cancellation policies a host can pick for a new stay. Titles and summaries only; the full text is
 // shown to guests on the stay itself.
 export async function GET(request: Request) {
-  const userId = await getUserId(request);
-  if (!userId) return json({ error: "Unauthorized" }, 401);
+  const auth = await guard(request, "hostRead");
+  if ("response" in auth) return auth.response;
 
   try {
     const policies = await sanityQuery<{ id: string; title: string; summary: string | null }[]>(

@@ -114,7 +114,10 @@ function SearchScreen({ query, initialSource }: { query: string; initialSource: 
             <ResultsPlaceholder />
           ) : search.status === "error" ? (
             <View className="gap-3 px-5">
-              <Alert tone="danger" message="We couldn't load stays. Check your connection and try again." />
+              <Alert
+                tone="danger"
+                message={search.rateLimited ? "You're searching a lot. Try again in a moment." : "We couldn't load stays. Check your connection and try again."}
+              />
               <Button title="Try again" variant="secondary" onPress={search.retry} />
             </View>
           ) : (

@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { getUserId } from "@/lib/api-auth";
+import { guard } from "@/lib/rate-limit";
 import { bookingHolds, bookings, getDb } from "@/lib/db";
 import { finalizePayment, publicBooking } from "@/lib/booking-finalize";
 import { json } from "@/lib/booking-server";
@@ -7,8 +7,9 @@ import { json } from "@/lib/booking-server";
 // Polled by the app after the payment sheet closes. The webhook normally books first; if it's late,
 // this asks Stripe itself, so a paid guest is never stranded. The client never creates a booking.
 export async function GET(request: Request) {
-  const userId = await getUserId(request);
-  if (!userId) return json({ error: "Unauthorized" }, 401);
+  const auth = await guard(request, "status");
+  if ("response" in auth) return auth.response;
+  const { userId } = auth;
   const holdId = new URL(request.url).searchParams.get("holdId") ?? "";
   if (!/^[0-9a-f-]{36}$/.test(holdId)) return json({ error: "invalid_request" }, 400);
 

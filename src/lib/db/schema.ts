@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { date, index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { date, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 // Private booking records. Sanity stays public; nothing here is ever sent to the app unfiltered.
 // The exclusion constraints (no overlapping date ranges per stay) live in drizzle/0001_constraints.sql.
@@ -63,3 +63,14 @@ export const stripeEvents = pgTable("stripe_events", {
   type: text("type").notNull(),
   processedAt: timestamp("processed_at", { withTimezone: true }).notNull().default(sql`now()`),
 });
+
+/** Fixed-window request counters for the API (`src/lib/rate-limit.ts`). Keys are hashed; rows older than an hour are swept. */
+export const rateLimits = pgTable(
+  "rate_limits",
+  {
+    key: text("key").notNull(),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.key, t.windowStart] }), index("rate_limits_window_idx").on(t.windowStart)],
+);

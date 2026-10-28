@@ -1,4 +1,4 @@
-import { getUserId } from "@/lib/api-auth";
+import { guard } from "@/lib/rate-limit";
 import { assetsAreImages, hashOf, json, ownerKeyFor, sanityMutate, sanityQuery, serverError, sharedPolicyIds, writeCopy } from "@/lib/host-server";
 import { stayErrors, type StayField, type StayInput } from "@/lib/host-stay-rules";
 import type { Facts } from "../../../../../studio/seed/check-copy";
@@ -45,8 +45,9 @@ const factsOf = (s: Record<string, unknown>): Facts => {
 };
 
 export async function GET(request: Request, { id }: { id: string }) {
-  const userId = await getUserId(request);
-  if (!userId) return json({ error: "Unauthorized" }, 401);
+  const auth = await guard(request, "hostRead");
+  if ("response" in auth) return auth.response;
+  const { userId } = auth;
   try {
     const stay = await loadOwned(userId, id);
     if (!stay) return json({ error: "Not found" }, 404);
@@ -59,8 +60,9 @@ export async function GET(request: Request, { id }: { id: string }) {
 }
 
 export async function PATCH(request: Request, { id }: { id: string }) {
-  const userId = await getUserId(request);
-  if (!userId) return json({ error: "Unauthorized" }, 401);
+  const auth = await guard(request, "hostStayUpdate");
+  if ("response" in auth) return auth.response;
+  const { userId } = auth;
   if (!STAY_ID.test(id)) return json({ error: "Not found" }, 404);
 
   const body = await request.json().catch(() => null);

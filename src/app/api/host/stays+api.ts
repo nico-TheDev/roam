@@ -1,4 +1,4 @@
-import { getUserId } from "@/lib/api-auth";
+import { guard } from "@/lib/rate-limit";
 import { findHost, assetsAreImages, hashOf, json, ownerKeyFor, sanityMutate, sanityQuery, serverError, sharedPolicyIds, writeCopy } from "@/lib/host-server";
 import { slugFor, STAY_LIMITS, stayErrors, type StayInput } from "@/lib/host-stay-rules";
 import type { Facts } from "../../../../studio/seed/check-copy";
@@ -12,8 +12,9 @@ const QUERY = `*[_type == "property" && host->ownerKey == $ownerKey] | order(tit
 type Row = { imageUrl: string | null; cleaningFee: number | null } & Record<string, unknown>;
 
 export async function GET(request: Request) {
-  const userId = await getUserId(request);
-  if (!userId) return json({ error: "Unauthorized" }, 401);
+  const auth = await guard(request, "hostRead");
+  if ("response" in auth) return auth.response;
+  const { userId } = auth;
 
   try {
     const ownerKey = await ownerKeyFor(userId);
@@ -36,8 +37,9 @@ const ref = (_ref: string) => ({ _type: "reference", _ref });
  * texts are generated and checked here (same prompt and checker as the seed) and nothing is written if they fail.
  */
 export async function POST(request: Request) {
-  const userId = await getUserId(request);
-  if (!userId) return json({ error: "Unauthorized" }, 401);
+  const auth = await guard(request, "hostStaysCreate");
+  if ("response" in auth) return auth.response;
+  const { userId } = auth;
 
   const body = await request.json().catch(() => null);
   if (Object.keys(stayErrors(body)).length) return json({ error: "Invalid values" }, 400);

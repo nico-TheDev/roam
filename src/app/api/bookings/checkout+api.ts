@@ -1,9 +1,10 @@
-import { getUserId } from "@/lib/api-auth";
+import { guard } from "@/lib/rate-limit";
 import { createCheckout, fail, json, loadBookableStay, readBookingInput } from "@/lib/booking-server";
 
 export async function POST(request: Request) {
-  const userId = await getUserId(request);
-  if (!userId) return json({ error: "Unauthorized" }, 401);
+  const auth = await guard(request, "checkout");
+  if ("response" in auth) return auth.response;
+  const { userId } = auth;
   const input = await readBookingInput(request);
   if (!input) return fail("invalid_request");
 

@@ -1,4 +1,4 @@
-import { getUserId } from "@/lib/api-auth";
+import { guard } from "@/lib/rate-limit";
 import { findHost, json, ownerKeyFor, serverError, uploadImage } from "@/lib/host-server";
 
 // One photo per request: the raw image bytes as the body. Only hosts can upload, so the dataset's asset store
@@ -7,8 +7,9 @@ const TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 10 * 1024 * 1024;
 
 export async function POST(request: Request) {
-  const userId = await getUserId(request);
-  if (!userId) return json({ error: "Unauthorized" }, 401);
+  const auth = await guard(request, "hostPhotos");
+  if ("response" in auth) return auth.response;
+  const { userId } = auth;
 
   const type = request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() ?? "";
   if (!TYPES.includes(type)) return json({ error: "Unsupported image type" }, 415);

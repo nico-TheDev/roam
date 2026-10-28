@@ -3,7 +3,7 @@
 
 export type Answer = { path: string; title: string; text: string; source: string };
 
-export type AskFailure = "network" | "unauthorized" | "server";
+export type AskFailure = "network" | "unauthorized" | "rate_limited" | "server";
 
 export class AskError extends Error {
   constructor(readonly reason: AskFailure) {
@@ -44,6 +44,7 @@ export async function askPolicies(question: string, token: string | null, signal
     throw new AskError("network");
   }
   if (res.status === 401) throw new AskError("unauthorized");
+  if (res.status === 429) throw new AskError("rate_limited");
   if (!res.ok) throw new AskError("server");
   try {
     const { answers } = (await res.json()) as { answers: Answer[] };

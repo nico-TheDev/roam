@@ -1,13 +1,14 @@
 import { and, asc, eq } from "drizzle-orm";
-import { getUserId } from "@/lib/api-auth";
+import { guard } from "@/lib/rate-limit";
 import { bookings, getDb } from "@/lib/db";
 import { publicBooking } from "@/lib/booking-finalize";
 import { json } from "@/lib/booking-server";
 
 /** The signed-in guest's confirmed bookings, soonest first. Only rows for the verified user id. */
 export async function GET(request: Request) {
-  const userId = await getUserId(request);
-  if (!userId) return json({ error: "Unauthorized" }, 401);
+  const auth = await guard(request, "bookings");
+  if ("response" in auth) return auth.response;
+  const { userId } = auth;
   const { db, pool } = getDb();
   try {
     const rows = await db

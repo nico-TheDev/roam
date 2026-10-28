@@ -1,12 +1,13 @@
 import { and, eq, gt } from "drizzle-orm";
-import { getUserId } from "@/lib/api-auth";
+import { guard } from "@/lib/rate-limit";
 import { bookingHolds, bookings, getDb } from "@/lib/db";
 import { fail, json } from "@/lib/booking-server";
 import { toDay } from "@/lib/booking-rules";
 
 // Date ranges that can't be booked, for the calendar. No user data. The server checks again at checkout.
 export async function GET(request: Request) {
-  if (!(await getUserId(request))) return json({ error: "Unauthorized" }, 401);
+  const auth = await guard(request, "availability");
+  if ("response" in auth) return auth.response;
   const stayId = new URL(request.url).searchParams.get("stayId");
   if (!stayId || !/^[A-Za-z0-9_.-]{1,128}$/.test(stayId)) return fail("invalid_request");
 

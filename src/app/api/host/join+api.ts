@@ -1,5 +1,5 @@
 import { createClerkClient } from "@clerk/backend";
-import { getUserId } from "@/lib/api-auth";
+import { guard } from "@/lib/rate-limit";
 import { findHost, json, ownerKeyFor, sanityMutate, serverError } from "@/lib/host-server";
 
 const FALLBACK_NAME = "Host";
@@ -24,8 +24,9 @@ async function publicName(userId: string) {
 }
 
 export async function POST(request: Request) {
-  const userId = await getUserId(request);
-  if (!userId) return json({ error: "Unauthorized" }, 401);
+  const auth = await guard(request, "hostJoin");
+  if ("response" in auth) return auth.response;
+  const { userId } = auth;
 
   try {
     const ownerKey = await ownerKeyFor(userId);

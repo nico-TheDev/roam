@@ -1,4 +1,4 @@
-import { getUserId } from "@/lib/api-auth";
+import { guard } from "@/lib/rate-limit";
 import { loadPolicies, pickPolicies } from "@/lib/ask-server";
 
 const MAX_QUESTION_LENGTH = 300;
@@ -6,7 +6,8 @@ const MAX_QUESTION_LENGTH = 300;
 const json = (body: unknown, status = 200) => Response.json(body, { status });
 
 export async function POST(request: Request) {
-  if (!(await getUserId(request))) return json({ error: "Unauthorized" }, 401);
+  const auth = await guard(request, "ask");
+  if ("response" in auth) return auth.response;
 
   const body = (await request.json().catch(() => null)) as { question?: unknown } | null;
   const question = typeof body?.question === "string" ? body.question.trim() : "";

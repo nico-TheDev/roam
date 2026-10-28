@@ -17,7 +17,7 @@ type SearchResponse = {
   filters: IntentFilter[];
   interpreter: SearchIntent["interpreter"];
 };
-type FailureReason = "network" | "unauthorized" | "server";
+type FailureReason = "network" | "unauthorized" | "rate_limited" | "server";
 
 class SearchError extends Error {
   constructor(readonly reason: FailureReason) {
@@ -27,7 +27,7 @@ class SearchError extends Error {
 
 export type SearchState =
   | { status: "loading" }
-  | { status: "error"; retry: () => void }
+  | { status: "error"; retry: () => void; rateLimited: boolean }
   | { status: "ready"; total: number; stays: SearchStay[]; filters: IntentFilter[] };
 
 async function fetchStays(query: string, token: string | null, signal: AbortSignal): Promise<SearchResponse> {
@@ -43,6 +43,7 @@ async function fetchStays(query: string, token: string | null, signal: AbortSign
     throw new SearchError("network");
   }
   if (res.status === 401) throw new SearchError("unauthorized");
+  if (res.status === 429) throw new SearchError("rate_limited");
   if (!res.ok) throw new SearchError("server");
   try {
     return (await res.json()) as SearchResponse;
@@ -57,7 +58,7 @@ export function useSearchStays(query: string, source: SearchSource): SearchState
   const [attempt, setAttempt] = useState(0);
   // The outcome remembers which request it belongs to, so a new query or retry is "loading" without setting state inside the effect.
   const key = `${attempt}|${query}`;
-  const [outcome, setOutcome] = useState<{ key: string; data?: SearchResponse }>({ key: "" });
+  const [outcome, setOutcome] = useState<{ key: string; data?: SearchResponse; rateLimited?: boolean }>({ key: "" });
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   useEffect(() => {
@@ -81,7 +82,7 @@ export function useSearchStays(query: string, source: SearchSource): SearchState
       } catch (e) {
         if (controller.signal.aborted) return;
         posthog?.capture("stay_search_failed", { reason: e instanceof SearchError ? e.reason : "network" });
-        setOutcome({ key });
+        setOutcome({ key, rateLimited: e instanceof SearchError && e.reason === "rate_limited" });
       }
     })();
     return () => controller.abort();
@@ -90,5 +91,5 @@ export function useSearchStays(query: string, source: SearchSource): SearchState
   }, [key]);
 
   if (!query || outcome.key !== key) return { status: "loading" };
-  return outcome.data ? { status: "ready", total: outcome.data.total, stays: outcome.data.stays, filters: outcome.data.filters } : { status: "error", retry };
+  return outcome.data ? { status: "ready", total: outcome.data.total, stays: outcome.data.stays, filters: outcome.data.filters } : { status: "error", retry, rateLimited: outcome.rateLimited ?? false };
 }

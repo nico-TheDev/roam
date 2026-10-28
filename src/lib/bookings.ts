@@ -41,6 +41,7 @@ export const reasonMessage: Record<string, string> = {
   paused: "This stay isn't taking bookings right now.",
   stay_not_found: "This stay is no longer available.",
   network: "We couldn't reach Roam. Check your connection and try again.",
+  rate_limited: "You're doing that a lot. Try again in a moment.",
   server: "Something went wrong on our side. Try again in a moment.",
 };
 export const messageFor = (reason: string) => reasonMessage[reason] ?? reasonMessage.server;
@@ -59,7 +60,7 @@ async function call<T>(path: string, token: string | null, init?: { method?: str
   }
   if (!res.ok) {
     const { reason } = (await res.json().catch(() => ({}))) as { reason?: string };
-    throw new BookingError(reason ?? "server", res.status);
+    throw new BookingError(res.status === 429 ? "rate_limited" : (reason ?? "server"), res.status);
   }
   return (await res.json()) as T;
 }
@@ -161,8 +162,14 @@ export function useBookingStatus(holdId: string, attempt = 0): BookingStatus {
         // Still pending after ~25 s: stop polling and let the screen say so.
         if (Date.now() - startedAt > 25_000) return setOutcome({ key, state: { status: "unknown" } });
         timer = setTimeout(poll, 1000);
-      } catch {
-        if (!controller.signal.aborted) setOutcome({ key, state: { status: "error" } });
+      } catch (e) {
+        if (controller.signal.aborted) return;
+        // A throttled poll is not a failed booking: wait and ask again until the 25 s window ends.
+        if (e instanceof BookingError && e.status === 429 && Date.now() - startedAt <= 25_000) {
+          timer = setTimeout(poll, 3000);
+          return;
+        }
+        setOutcome({ key, state: { status: "error" } });
       }
     };
     let timer: ReturnType<typeof setTimeout> | undefined;
