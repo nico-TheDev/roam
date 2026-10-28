@@ -1,10 +1,11 @@
 import { useUser } from "@clerk/expo";
 import { useRouter } from "expo-router";
-import { Bell, Briefcase, CalendarDays, CircleHelp, CreditCard, FileText, House, Settings, User } from "lucide-react-native";
+import { Bell, Briefcase, CalendarDays, CircleHelp, CreditCard, FileText, House, Info, Lock, Settings, User } from "lucide-react-native";
 import { ScrollView, View } from "react-native";
 import Animated from "react-native-reanimated";
 import {
   Avatar,
+  Alert,
   Badge,
   Icon,
   IconButton,
@@ -16,6 +17,7 @@ import {
   Text,
   Wordmark,
 } from "@/components";
+import { DEMO_DETAIL } from "@/lib/demo";
 import { useHost } from "@/lib/host";
 import { useEntering } from "@/lib/motion";
 import { useBookings } from "@/lib/bookings";
@@ -114,10 +116,19 @@ export default function Profile() {
         <ProfileSection title="Preferences">
           <ProfileRow icon={<Icon icon={Bell} size="lg" />} label="Notifications" detail="Coming soon" disabled />
           <ProfileRow icon={<Icon icon={CircleHelp} size="lg" />} label="Help & support" detail="Coming soon" disabled />
+          <ProfileRow
+            icon={<Icon icon={Lock} size="lg" />}
+            label="Privacy"
+            onPress={() => router.push("/account/privacy")}
+          />
         </ProfileSection>
       </Animated.View>
 
       <Animated.View entering={useEntering(5)}>
+        <Alert tone="success" message={DEMO_DETAIL} icon={<Icon icon={Info} className="text-ink" />} />
+      </Animated.View>
+
+      <Animated.View entering={useEntering(6)}>
         <PolicyCard
           icon={<Icon icon={FileText} size="lg" className="text-secondary-strong" />}
           title="Free cancellation"

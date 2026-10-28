@@ -15,6 +15,7 @@ import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Alert, Button, GoogleMark, Icon, OnboardingDashes, SheetShape, Text, Wordmark } from "@/components";
 import { useProviderAuth } from "@/lib/auth";
+import { DEMO_NOTICE } from "@/lib/demo";
 
 // Sample Unsplash photos, not final assets.
 const slides = [
@@ -147,6 +148,9 @@ export default function Onboarding() {
               onPress={continueWithGoogle}
             />
           </View>
+          <Text variant="micro" className="text-center">
+            {DEMO_NOTICE}
+          </Text>
         </SheetShape>
       </View>
     </View>

@@ -180,7 +180,7 @@ export default function BookStay() {
           onPress={pay}
         />
         <Text variant="micro" className="text-center">
-          Test mode. Pay with card 4242 4242 4242 4242, any future date and CVC.
+          Demo: Stripe test mode, no real charge. Pay with card 4242 4242 4242 4242, any future date and CVC.
         </Text>
       </View>
     </View>

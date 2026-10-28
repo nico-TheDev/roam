@@ -11,9 +11,11 @@ import {
   Icon,
   SocialButtons,
   SocialProvider,
+  Text,
   TextField,
   TextFieldRef,
 } from "@/components";
+import { DEMO_LOGIN_HINT } from "@/lib/demo";
 import { useProviderAuth, useSignInFlow } from "@/lib/auth";
 import { validateEmail, validatePassword } from "@/lib/validation";
 
@@ -111,6 +113,9 @@ export default function SignIn() {
         <Divider label="or" />
         <SocialButtons providers={["google"]} onPress={continueWith} loading={social} disabled={busy} />
       </View>
+      <Text variant="small" className="text-center">
+        {DEMO_LOGIN_HINT}
+      </Text>
       <AuthSwitch prompt="New to roam?" action="Create an account" href="/sign-up" />
     </AuthScreen>
   );
