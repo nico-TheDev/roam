@@ -124,6 +124,7 @@ function Routes() {
         <Stack.Screen name="verify" />
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
+      <Stack.Screen name="sso-callback" />
       <Stack.Screen name="design-system" options={{ headerShown: true }} />
     </Stack>
   );
