@@ -47,7 +47,7 @@ Write `README.md` per the Decisions. Use relative paths to `docs/screenshots/*.p
 - Step 2 done: dev-instance user `demo+clerk_test@example.com`, credentials in `src/lib/demo.ts`; sign-in plus code 424242 verified against Clerk's API.
 - Step 6 done as a draft: README written; the APK link points at `releases/latest` and the landing URL is not in it yet.
 - Step 3 done: landing is live at https://roam.norbertoignaciojr.dev (HTTP 200, title checked); `site` set in `landing/astro.config.mjs`, README links it. Theme toggle and typing demo not re-checked in a browser.
-- Steps 4 and 5 skipped by the user (2026-10-28): the queued EAS build was cancelled, no GitHub Release, no landing download link. The README says no APK is published yet.
+- Steps 4 and 5 done (2026-10-29): APK built locally (`eas build --local`, profile `production-apk`, about 3 min with the SDK cached) and published as pre-release `v0.1.0-demo` on GitHub; README and the landing hero link to the asset URL (`releases/download/v0.1.0-demo/roam-demo.apk`, not `releases/latest`, which skips pre-releases). The release APK was tested on a phone by the user before the Trips/Hosting token fix; the rebuilt one is not yet confirmed.
 
 ## Verification
 - `npx tsc --noEmit` (app files) and `npx expo lint` pass.
@@ -65,4 +65,4 @@ Write `README.md` per the Decisions. Use relative paths to `docs/screenshots/*.p
 - Add `README.md` as the public overview; AGENTS.md stays the source of decisions.
 
 ## Result
-Daily budget, demo account, landing page (Vercel) and README are done. Not done: APK build and GitHub Release, landing download link, `eas deploy` of the daily budget, an in-app check of the budget fallback and busy message. To finish later: build with `production-apk`, publish a release, add the landing link, and restore the README Android line.
+Everything in the plan is done: daily budget (code; `eas deploy` to production still pending), demo account, landing page on Vercel with an Android download link, GitHub Release with the APK, and the README. Not verified: the rebuilt APK on a device after the `useGetToken` fix, the budget fallback in the running app, the README rendering on GitHub, the live landing link after this push.
